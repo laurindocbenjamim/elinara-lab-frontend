@@ -101,3 +101,43 @@ export enum AuthStatus {
   AUTHENTICATED = 'AUTHENTICATED',
   UNAUTHENTICATED = 'UNAUTHENTICATED',
 }
+
+// Agent FundingDetective Types
+export interface AgentStatus {
+  agent_status: 'active' | 'stopped' | 'paused';
+  plan: string;
+  selected_model: string;
+}
+
+export interface AgentControlRequest {
+  action: 'start' | 'stop' | 'pause';
+}
+
+export interface AgentConfigRequest {
+  model: string;
+}
+
+export interface AgentTaskRequest {
+  filename: string;
+  phone: string;
+}
+
+export interface AgentTaskResponse {
+  msg: string;
+  task_id: string;
+}
+
+export interface AgentTask {
+  id: string;
+  filename: string;
+  phone: string;
+  status: 'queued' | 'processing' | 'completed' | 'failed';
+  progress: number;
+  message?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConnectionEmailsRequest {
+  connection_emails: string[];
+}

@@ -13,10 +13,17 @@ declare global {
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, status } = useAuth();
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (status === 'AUTHENTICATED') {
+      navigate('/dashboard');
+    }
+  }, [status, navigate]);
 
 
   // Google Sign-In is now handled server-side via backend OAuth flow

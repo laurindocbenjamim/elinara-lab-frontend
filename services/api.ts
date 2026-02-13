@@ -7,7 +7,10 @@ import {
   UserResponse,
   DriveFile,
   DriveListResponse,
-  RegisterRequest
+  RegisterRequest,
+  AgentStatus,
+  AgentTask,
+  AgentTaskResponse
 } from '../types';
 import { config } from '../config';
 
@@ -434,6 +437,40 @@ export const cloudFilesService = {
 
   listFiles: async (): Promise<{ success: boolean; files: Array<{ id: string; name: string; provider: string }> }> => {
     return apiClient.get('/cloud-files');
+  }
+};
+
+// FundingDetective Agent Service
+export const agentService = {
+  getStatus: async (): Promise<AgentStatus> => {
+    return apiClient.get('/agent/status');
+  },
+
+  control: async (action: 'start' | 'stop' | 'pause'): Promise<{ msg: string; status: string }> => {
+    return apiClient.post('/agent/control', { action });
+  },
+
+  updateConfig: async (model: string): Promise<{ msg: string; selected_model: string }> => {
+    return apiClient.post('/agent/config', { model });
+  },
+
+  triggerTask: async (filename: string, phone: string): Promise<AgentTaskResponse> => {
+    return apiClient.post('/agent/task', { filename, phone });
+  },
+
+  getTaskStatus: async (taskId: string): Promise<AgentTask> => {
+    return apiClient.get(`/agent/task/${taskId}`);
+  }
+};
+
+// Configuration Service
+export const configService = {
+  getConnectionEmails: async (): Promise<{ connection_emails: string[] }> => {
+    return apiClient.get('/config/connection-emails');
+  },
+
+  updateConnectionEmails: async (emails: string[]): Promise<GenericResponse> => {
+    return apiClient.post('/config/connection-emails', { connection_emails: emails });
   }
 };
 

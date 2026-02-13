@@ -12,6 +12,11 @@ import { OneDrive } from './pages/OneDrive';
 import { FileProperties } from './pages/FileProperties';
 
 import { CrossReference } from './pages/CrossReference';
+import { AgentTasks } from './pages/AgentTasks';
+import { Agent } from './pages/Agent';
+import { Profile } from './pages/Profile';
+import { Billing } from './pages/Billing';
+import { SocketProvider } from './context/SocketContext';
 import { AuthStatus } from './types';
 
 // Protected Route Component
@@ -50,6 +55,38 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="agent"
+          element={
+            <ProtectedRoute>
+              <Agent />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="agent-tasks"
+          element={
+            <ProtectedRoute>
+              <AgentTasks />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="billing"
+          element={
+            <ProtectedRoute>
+              <Billing />
             </ProtectedRoute>
           }
         />
@@ -114,7 +151,9 @@ const App: React.FC = () => {
     <HashRouter>
       <AuthProvider>
         <ThemeProvider>
-          <AppRoutes />
+          <SocketProvider>
+            <AppRoutes />
+          </SocketProvider>
         </ThemeProvider>
       </AuthProvider>
     </HashRouter>

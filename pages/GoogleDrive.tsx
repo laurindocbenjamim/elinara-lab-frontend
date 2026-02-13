@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-    Cloud, ChevronRight, Plus, HelpCircle, Layout,
+    Cloud, ChevronRight,
     Search, Folder, File, FileText, Image as ImageIcon,
     Music, Video, Grid, List,
-    HardDrive, Download, Info, MoreVertical, Trash2, Globe, Star, Clock, Users, Share2, LogOut
+    HardDrive, Download, Info, MoreVertical, Share2, LogOut
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { driveService, authService } from '../services/api';
@@ -174,85 +174,47 @@ export const GoogleDrive: React.FC = () => {
 
     return (
         <div className="flex h-screen bg-[#f8f9fa] dark:bg-gray-900 overflow-hidden -mt-16 pt-16">
-            {/* Workspace Sidebar */}
-            <aside className="w-64 flex flex-col pt-6 px-3 bg-gray-50/50 dark:bg-gray-800/50 border-r border-gray-200 dark:border-gray-700 hidden md:flex">
-                {/* Drive Switcher */}
-                <div className="px-2 mb-6">
-                    <div className="bg-gray-200/50 dark:bg-gray-700/50 p-1 rounded-xl flex">
-                        <button
-                            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all bg-white dark:bg-gray-600 dark:text-white text-blue-600 shadow-sm"
-                        >
-                            <Cloud className="h-4 w-4" /> Google
-                        </button>
-                        <button
-                            onClick={() => navigate('/drive/microsoft')}
-                            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                        >
-                            <HardDrive className="h-4 w-4" /> OneDrive
-                        </button>
-                    </div>
-                </div>
-
-                <button className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 hover:shadow-md border border-gray-200 dark:border-gray-700 rounded-2xl text-sm font-medium transition-all mb-8 mx-2 text-gray-700 dark:text-gray-200">
-                    <Plus className="h-5 w-5 text-blue-600" />
-                    New
-                </button>
-
-                <nav className="space-y-1">
-                    <button
-                        onClick={() => { setCurrentFolderId(null); setBreadcrumbs([{ id: null, name: 'My Drive' }]); setSearchQuery(''); }}
-                        className={`w-full flex items-center gap-4 px-4 py-2 text-sm font-medium rounded-full transition-colors ${currentFolderId === null ? 'bg-blue-100/50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'}`}
-                    >
-                        <Layout className="h-5 w-5" />
-                        Home
-                    </button>
-                    <button className="w-full flex items-center gap-4 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded-full transition-colors">
-                        <Users className="h-5 w-5" />
-                        Shared with me
-                    </button>
-                    <button className="w-full flex items-center gap-4 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded-full transition-colors">
-                        <Clock className="h-5 w-5" />
-                        Recent
-                    </button>
-                    <button className="w-full flex items-center gap-4 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded-full transition-colors">
-                        <Star className="h-5 w-5" />
-                        Starred
-                    </button>
-                    <div className="py-2"></div>
-                    <button className="w-full flex items-center gap-4 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded-full transition-colors">
-                        <Trash2 className="h-5 w-5" />
-                        Trash
-                    </button>
-                    <button className="w-full flex items-center gap-4 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded-full transition-colors">
-                        <Cloud className="h-5 w-5" />
-                        Storage
-                    </button>
-                </nav>
-            </aside>
-
             {/* Main Workspace Area */}
-            <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-gray-900 md:rounded-tl-3xl border-l border-t border-gray-200 dark:border-gray-800 shadow-inner">
+            <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shadow-inner">
                 {/* Workspace Header */}
                 <header className="px-6 py-4 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
-                    <div className="flex-1 max-w-2xl px-2">
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-14 flex items-center pointer-events-none">
-                                <Search className="h-5 w-5 text-gray-400" />
+                    <div className="flex items-center gap-6 flex-1">
+                        {/* Drive Switcher moved from sidebar */}
+                        <div className="bg-gray-100 dark:bg-gray-800 p-1 rounded-2xl flex border border-gray-200 dark:border-gray-700">
+                            <button
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all bg-white dark:bg-gray-700 dark:text-white text-blue-600 shadow-sm border border-gray-100 dark:border-gray-600"
+                            >
+                                <Cloud className="h-4 w-4" /> Google
+                            </button>
+                            <button
+                                onClick={() => navigate('/drive/microsoft')}
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            >
+                                <HardDrive className="h-4 w-4" /> OneDrive
+                            </button>
+                        </div>
+
+                        <div className="flex-1 max-w-xl">
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-14 flex items-center pointer-events-none">
+                                    <Search className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Search in Drive"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full bg-[#f1f3f4] dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-700 focus:ring-0 focus:border-transparent rounded-full py-2.5 pl-14 pr-6 text-base dark:text-gray-200 transition-all group-hover:bg-[#e8eaed] dark:group-hover:bg-gray-700"
+                                />
                             </div>
-                            <input
-                                type="text"
-                                placeholder="Search in Drive"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-[#f1f3f4] dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-700 focus:ring-0 focus:border-transparent rounded-full py-3 pl-14 pr-6 text-base dark:text-gray-200 transition-all group-hover:bg-[#e8eaed] dark:group-hover:bg-gray-700"
-                            />
                         </div>
                     </div>
+
                     <div className="flex items-center gap-3">
                         {isConnected && (
                             <div className="flex items-center gap-2 mr-2">
                                 {connectedEmail && (
-                                    <span className="text-xs text-gray-500 dark:text-gray-400 hidden md:inline-block">
+                                    <span className="text-xs font-bold text-gray-500 dark:text-gray-400 hidden md:inline-block">
                                         {connectedEmail}
                                     </span>
                                 )}
@@ -276,9 +238,7 @@ export const GoogleDrive: React.FC = () => {
                                 />
                             </div>
                         )}
-                        <button className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"><HelpCircle className="h-6 w-6" /></button>
-                        <button className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"><HelpCircle className="h-6 w-6" /></button>
-                        <div className="h-10 w-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-700 font-bold ml-2">
+                        <div className="h-10 w-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center text-primary-700 dark:text-primary-400 font-black ml-2 border-2 border-white dark:border-gray-800 shadow-sm">
                             {user?.username?.charAt(0).toUpperCase()}
                         </div>
                     </div>

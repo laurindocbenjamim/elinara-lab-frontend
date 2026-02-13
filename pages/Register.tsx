@@ -1,12 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/api'; // Use authService for public registration
 import { RegisterRequest } from '../types';
 import { countries } from '../data/countries';
-import { User as UserIcon, Mail, Lock, Phone, MapPin, Globe, CheckCircle, ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { User as UserIcon, Mail, Lock, Phone, Globe, CheckCircle, ChevronDown, Eye, EyeOff } from 'lucide-react';
 
 export const Register: React.FC = () => {
   const navigate = useNavigate();
+  const { status } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (status === 'AUTHENTICATED') {
+      navigate('/dashboard');
+    }
+  }, [status, navigate]);
   // Using RegisterRequest structure directly for state
   const [formData, setFormData] = useState<RegisterRequest>({
     authEmail: '',
