@@ -1,0 +1,5 @@
+{
+  "name": "Flask JWT Auth Frontend",
+  "description": "A modern React frontend for the Flask JWT Auth starter backend, featuring user authentication, profile management, admin dashboard, and portfolio pages.",
+  "requestFramePermissions": []
+}

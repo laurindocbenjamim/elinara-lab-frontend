@@ -1,0 +1,256 @@
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { authService } from '../services/api'; // Use authService for public registration
+import { RegisterRequest } from '../types';
+import { countries } from '../data/countries';
+import { User as UserIcon, Mail, Lock, Phone, MapPin, Globe, CheckCircle, ChevronDown, Eye, EyeOff } from 'lucide-react';
+
+export const Register: React.FC = () => {
+  const navigate = useNavigate();
+  // Using RegisterRequest structure directly for state
+  const [formData, setFormData] = useState<RegisterRequest>({
+    authEmail: '',
+    authPassword: '',
+    firstName: '',
+    lastName: '',
+    countryName: '',
+    countryTelCode: '',
+    phoneNumber: ''
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedCountryName = e.target.value;
+    const country = countries.find(c => c.name === selectedCountryName);
+    setFormData({
+      ...formData,
+      countryName: selectedCountryName,
+      countryTelCode: country ? country.dial_code : formData.countryTelCode
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      await authService.register(formData);
+      setShowSuccess(true);
+
+      // Delay redirect to allow user to read the message
+      setTimeout(() => {
+        navigate('/login', { state: { message: 'Registration successful. Please check your email for confirmation code.' } });
+      }, 5000);
+    } catch (err: any) {
+      setError(err.message || 'Registration failed.');
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-[100vh] flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4 sm:px-6 lg:px-8 relative">
+      {/* Success Popup Overlay */}
+      {showSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl transform transition-all scale-100 flex flex-col items-center text-center">
+            <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle className="h-10 w-10 text-green-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Registration Successful!</h3>
+            <p className="text-gray-600 mb-6">
+              Please check your inbox at <span className="font-semibold text-gray-800">{formData.authEmail}</span> to confirm your account.
+            </p>
+            <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+              <div className="h-full bg-green-500 animate-[progress_5s_linear_forwards]" style={{ width: '100%' }}></div>
+            </div>
+            <p className="text-xs text-gray-400 mt-4">Redirecting to login...</p>
+          </div>
+        </div>
+      )}
+
+      <div className="w-full max-w-md animate-fade-in">
+        {/* Glass morphism card */}
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-2xl">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 mb-4">
+              <UserIcon className="h-6 w-6 text-white" />
+            </div>
+            <h2 className="text-3xl font-bold text-white">Create Account</h2>
+            <p className="mt-2 text-sm text-gray-300">
+              Join our engineering community
+            </p>
+          </div>
+
+          {error && (
+            <div className="text-red-300 text-sm bg-red-500/20 border border-red-500/30 p-3 rounded-lg mb-6 animate-pulse">
+              {error}
+            </div>
+          )}
+
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            {/* Name Fields */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="relative group">
+                <input
+                  type="text"
+                  name="firstName"
+                  id="firstName"
+                  required
+                  placeholder="First name"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                />
+              </div>
+              <div className="relative group">
+                <input
+                  type="text"
+                  name="lastName"
+                  id="lastName"
+                  required
+                  placeholder="Last name"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-green-400 transition-colors" />
+              </div>
+              <input
+                id="authEmail"
+                name="authEmail"
+                type="email"
+                required
+                placeholder="Email address"
+                value={formData.authEmail}
+                onChange={handleChange}
+                className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+              />
+            </div>
+
+            {/* Password */}
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-green-400 transition-colors" />
+              </div>
+              <input
+                id="authPassword"
+                name="authPassword"
+                type={showPassword ? 'text' : 'password'}
+                required
+                placeholder="Password"
+                value={formData.authPassword}
+                onChange={handleChange}
+                className="w-full pl-12 pr-12 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-green-400 transition-colors focus:outline-none"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+
+            {/* Location Fields: Country & Code */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Globe className="h-5 w-5 text-gray-400 group-focus-within:text-green-400 transition-colors" />
+                </div>
+                <select
+                  name="countryName"
+                  id="countryName"
+                  required
+                  value={formData.countryName}
+                  onChange={handleCountryChange}
+                  className="w-full pl-12 pr-10 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm appearance-none"
+                >
+                  <option value="" disabled className="text-gray-900">Select Country</option>
+                  {countries.map((c) => (
+                    <option key={c.code} value={c.name} className="text-gray-900">
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                </div>
+              </div>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Globe className="h-5 w-5 text-gray-400 group-focus-within:text-green-400 transition-colors" />
+                </div>
+                <input
+                  type="text"
+                  name="countryTelCode"
+                  id="countryTelCode"
+                  required
+                  placeholder="Code (+351)"
+                  value={formData.countryTelCode}
+                  onChange={handleChange}
+                  className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                />
+              </div>
+            </div>
+
+            {/* Phone Number */}
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Phone className="h-5 w-5 text-gray-400 group-focus-within:text-green-400 transition-colors" />
+              </div>
+              <input
+                type="tel"
+                name="phoneNumber"
+                id="phoneNumber"
+                required
+                placeholder="Phone number"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+              />
+            </div>
+
+            {/* Sign Up Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 mt-6"
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  Creating account...
+                </span>
+              ) : (
+                'Create account'
+              )}
+            </button>
+          </form>
+
+          {/* Sign In Link */}
+          <p className="mt-6 text-center text-sm text-gray-300">
+            Already have an account?{' '}
+            <Link to="/login" className="font-semibold text-green-400 hover:text-green-300 transition-colors">
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
