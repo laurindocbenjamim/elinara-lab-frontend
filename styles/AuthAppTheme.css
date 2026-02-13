@@ -1,0 +1,145 @@
+.auth-app-shell {
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-app-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+  opacity: 0.2;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-app-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 75% 0%, rgba(30, 58, 138, 0.08), transparent 58%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-app-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.auth-app-main {
+  color: #ffffff;
+}
+
+.auth-app-main .bg-white,
+.auth-app-main .bg-gray-50,
+.auth-app-main .bg-gray-100,
+.auth-app-main .bg-\[\#f8f9fa\],
+.auth-app-main .dark\:bg-gray-800,
+.auth-app-main .dark\:bg-gray-900\/50,
+.auth-app-main .bg-gray-900\/50 {
+  background: rgba(10, 10, 12, 0.6) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.auth-app-main .bg-\[\#f1f3f4\] {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.auth-app-main .group:hover .group-hover\:bg-\[\#e8eaed\] {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.auth-app-main .border-gray-100,
+.auth-app-main .border-gray-200,
+.auth-app-main .border-gray-300,
+.auth-app-main .dark\:border-gray-700,
+.auth-app-main .dark\:border-gray-600,
+.auth-app-main .dark\:border-gray-800,
+.auth-app-main .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+.auth-app-main .dark\:divide-gray-700 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.auth-app-main .text-gray-900,
+.auth-app-main .text-gray-800,
+.auth-app-main .text-gray-700,
+.auth-app-main .dark\:text-white {
+  color: #f4f4f5 !important;
+}
+
+.auth-app-main .text-gray-600,
+.auth-app-main .text-gray-500,
+.auth-app-main .text-gray-400,
+.auth-app-main .dark\:text-gray-400,
+.auth-app-main .dark\:text-gray-300 {
+  color: #a1a1aa !important;
+}
+
+.auth-app-main input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.auth-app-main textarea,
+.auth-app-main select {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.auth-app-main input::placeholder,
+.auth-app-main textarea::placeholder {
+  color: #71717a !important;
+}
+
+.auth-app-main input:focus,
+.auth-app-main textarea:focus,
+.auth-app-main select:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.06) !important;
+}
+
+.auth-app-main table {
+  color: #e4e4e7;
+}
+
+.auth-app-main thead.bg-gray-50,
+.auth-app-main thead .bg-gray-50 {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.auth-app-main tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.auth-app-main .bg-red-50 {
+  background: rgba(239, 68, 68, 0.08) !important;
+}
+
+.auth-app-main .text-red-700 {
+  color: #fca5a5 !important;
+}
+
+.auth-app-main .bg-green-50 {
+  background: rgba(34, 197, 94, 0.08) !important;
+}
+
+.auth-app-main .text-green-700 {
+  color: #86efac !important;
+}
+
+.auth-app-main .bg-purple-100 {
+  background: rgba(168, 85, 247, 0.18) !important;
+}
+
+.auth-app-main .text-purple-800 {
+  color: #d8b4fe !important;
+}
+
+.auth-app-main .shadow,
+.auth-app-main .shadow-sm,
+.auth-app-main .shadow-lg,
+.auth-app-main .shadow-xl,
+.auth-app-main .shadow-2xl {
+  box-shadow: 0 20px 40px -16px rgba(0, 0, 0, 0.7) !important;
+}

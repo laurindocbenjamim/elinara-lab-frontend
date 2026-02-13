@@ -12,12 +12,41 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const DEV_SESSION_ROLE_KEY = 'dev_session_role';
+
+const isDevSessionRole = (role: string | null): role is 'user' | 'admin' =>
+  role === 'user' || role === 'admin';
+
+const buildDevUser = (role: 'user' | 'admin'): User => ({
+  id: role === 'admin' ? 999 : 998,
+  email: role === 'admin' ? 'admin@elinara.local' : 'user@elinara.local',
+  username: role === 'admin' ? 'dev_admin' : 'dev_user',
+  firstname: 'Dev',
+  lastname: role === 'admin' ? 'Admin' : 'User',
+  role,
+  is_administrator: role === 'admin',
+  has_drive_access: true,
+  has_microsoft_drive_access: true,
+  providers: {
+    google: { connected: true, email: role === 'admin' ? 'admin@elinara.local' : 'user@elinara.local' },
+    microsoft: { connected: true, email: role === 'admin' ? 'admin@elinara.local' : 'user@elinara.local' }
+  }
+});
 
 export const AuthProvider = ({ children }: { children?: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<AuthStatus>(AuthStatus.IDLE);
 
   const checkAuth = async () => {
+    if (import.meta.env.DEV) {
+      const devRole = localStorage.getItem(DEV_SESSION_ROLE_KEY);
+      if (isDevSessionRole(devRole)) {
+        setUser(buildDevUser(devRole));
+        setStatus(AuthStatus.AUTHENTICATED);
+        return;
+      }
+    }
+
     // Only set loading state if we're not potentially already authenticated
     // This prevents UI flashing/unmounting during background refreshes
     if (status === AuthStatus.IDLE || status === AuthStatus.UNAUTHENTICATED) {
@@ -49,6 +78,7 @@ export const AuthProvider = ({ children }: { children?: ReactNode }) => {
   const logout = async () => {
     // Clear local state immediately for better UX
     localStorage.removeItem('token');
+    localStorage.removeItem(DEV_SESSION_ROLE_KEY);
     setUser(null);
     setStatus(AuthStatus.UNAUTHENTICATED);
 

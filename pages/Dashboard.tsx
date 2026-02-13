@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { BrainCircuit, HardDrive, CreditCard, Play, Square, Pause, ArrowUpRight, Activity } from 'lucide-react';
+import { Play, Square, Pause } from 'lucide-react';
 import { agentService, cloudFilesService } from '../services/api';
 import { AgentStatus, AuthStatus } from '../types';
+import '../styles/Dashboard.css';
 
 export const Dashboard: React.FC = () => {
-  const { user, status } = useAuth();
+  const { user, status, logout } = useAuth();
   const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
   const [cloudFilesCount, setCloudFilesCount] = useState(0);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -20,12 +22,18 @@ export const Dashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [statusRes, filesRes] = await Promise.all([
+      const [statusRes, filesRes] = await Promise.allSettled([
         agentService.getStatus(),
         cloudFilesService.listFiles()
       ]);
-      setAgentStatus(statusRes);
-      setCloudFilesCount(filesRes.files.length);
+
+      if (statusRes.status === 'fulfilled') {
+        setAgentStatus(statusRes.value);
+      }
+
+      if (filesRes.status === 'fulfilled') {
+        setCloudFilesCount(filesRes.value.files.length);
+      }
     } catch (err) {
       console.error('Failed to fetch dashboard data', err);
     } finally {
@@ -45,135 +53,141 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  const activityLogs = useMemo(() => {
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const logs = [
+      { time: now, msg: `Agent status: ${agentStatus?.agent_status || 'offline'}` },
+      { time: now, msg: `Cloud files indexed: ${cloudFilesCount}` },
+      { time: now, msg: `Current plan: ${agentStatus?.plan || 'Standard'}` }
+    ];
+
+    if (message) {
+      logs.unshift({ time: now, msg: message.text });
+    }
+
+    return logs.slice(0, 6);
+  }, [agentStatus?.agent_status, agentStatus?.plan, cloudFilesCount, message]);
+
   if (status === AuthStatus.LOADING || status === AuthStatus.IDLE || loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] dark:text-white">
-        <div className="animate-spin h-10 w-10 border-4 border-primary-500 border-t-transparent rounded-full mb-4"></div>
-        <p className="text-gray-500 dark:text-gray-400 font-medium">Loading overview...</p>
+      <div className="dashboard-page dashboard-loading">
+        <div className="dashboard-glow" />
+        <div className="dash-loader" />
+        <p className="dash-loading-text">Loading overview...</p>
       </div>
     );
   }
 
-  const stats = [
-    {
-      name: 'Agent Status',
-      value: agentStatus?.agent_status || 'Offline',
-      icon: BrainCircuit,
-      color: agentStatus?.agent_status === 'active' ? 'text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400' : 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400',
-      link: '/#/agent',
-      linkText: 'Configure Agent'
-    },
-    {
-      name: 'Cloud Files',
-      value: cloudFilesCount.toString(),
-      icon: HardDrive,
-      color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400',
-      link: '/#/drive',
-      linkText: 'Manage Files'
-    },
-    {
-      name: 'Current Plan',
-      value: agentStatus?.plan || 'Standard',
-      icon: CreditCard,
-      color: 'text-purple-600 bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400',
-      link: '/#/billing',
-      linkText: 'Upgrade Plan'
-    }
-  ];
+  const displayName = user?.firstname || user?.username || 'User';
+  const isAgentActive = agentStatus?.agent_status === 'active';
 
   return (
-    <div className="py-6">
-      <div className="mb-8">
-        <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-2">Welcome back, {user?.firstname || user?.username}!</h2>
-        <p className="text-gray-500 dark:text-gray-400">Here's what's happening with your workspace today.</p>
-      </div>
+    <div className="dashboard-page">
+      <div className="dashboard-glow" />
+
+      <header className="dash-header">
+        <div className="dash-branding-corner">
+          <h1>Elinara Labs</h1>
+        </div>
+
+        <div className="dash-top-actions">
+          <Link to="/profile" className="dash-logout-btn">Profile</Link>
+          <button type="button" className="dash-logout-btn" onClick={logout}>Logout</button>
+        </div>
+
+        <div className="dash-branding">
+          <p className="dash-subtitle">Workspace Control Center</p>
+          <h2 className="company-dash-title">Welcome back, {displayName}</h2>
+        </div>
+      </header>
 
       {message && (
-        <div className={`mb-6 p-4 rounded-2xl border ${message.type === 'success' ? 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' : 'bg-red-50 text-red-700 border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'}`}>
+        <div className={`dash-inline-message ${message.type === 'success' ? 'is-success' : 'is-error'}`}>
           {message.text}
         </div>
       )}
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {stats.map((stat) => (
-          <div key={stat.name} className="bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start mb-4">
-              <div className={`p-3 rounded-2xl ${stat.color}`}>
-                <stat.icon className="h-6 w-6" />
+      <section className="dash-grid">
+        <article className="dash-card">
+          <h3 className="section-title-centered">Your Account</h3>
+          <div className="vault-field">
+            <label className="vault-label" htmlFor="dash-username">Username</label>
+            <input id="dash-username" className="vault-input" value={user?.username || ''} readOnly />
+          </div>
+          <div className="vault-field">
+            <label className="vault-label" htmlFor="dash-email">Email</label>
+            <input id="dash-email" className="vault-input" value={user?.email || ''} readOnly />
+          </div>
+          <div className="vault-field">
+            <label className="vault-label" htmlFor="dash-role">Role</label>
+            <input
+              id="dash-role"
+              className="vault-input"
+              value={user?.is_administrator ? 'Administrator' : 'User'}
+              readOnly
+            />
+          </div>
+        </article>
+
+        <article className="dash-card">
+          <h3 className="section-title-centered">Workspace Snapshot</h3>
+          <div className="agent-status-row">
+            <div className="status-indicator">
+              <span className={`status-dot ${isAgentActive ? '' : 'status-dot-offline'}`} />
+              <span className="status-text">
+                {isAgentActive ? 'Agent Active' : `Agent ${agentStatus?.agent_status || 'offline'}`}
+              </span>
+            </div>
+          </div>
+          <div className="dash-mini-metrics">
+            <div className="dash-mini-metric">
+              <span className="dash-mini-label">Cloud Files</span>
+              <span className="dash-mini-value">{cloudFilesCount}</span>
+            </div>
+            <div className="dash-mini-metric">
+              <span className="dash-mini-label">Plan</span>
+              <span className="dash-mini-value">{agentStatus?.plan || 'Standard'}</span>
+            </div>
+          </div>
+        </article>
+
+        <article className="dash-card row-span-2">
+          <h3 className="section-title-centered">Agent Controls</h3>
+          <div className="dash-control-grid">
+            <button type="button" className="dash-control-btn is-start" onClick={() => handleAgentControl('start')}>
+              <Play className="dash-control-icon" />
+              Start
+            </button>
+            <button type="button" className="dash-control-btn is-pause" onClick={() => handleAgentControl('pause')}>
+              <Pause className="dash-control-icon" />
+              Pause
+            </button>
+            <button type="button" className="dash-control-btn is-stop" onClick={() => handleAgentControl('stop')}>
+              <Square className="dash-control-icon" />
+              Stop
+            </button>
+          </div>
+
+          <div className="logs-container">
+            {activityLogs.map((entry, index) => (
+              <div key={`${entry.time}-${index}`} className="log-entry">
+                <span className="log-time">{entry.time}</span>
+                <span className="log-msg">{entry.msg}</span>
               </div>
-              <a href={stat.link} className="text-gray-400 hover:text-primary-600 transition-colors">
-                <ArrowUpRight className="h-5 w-5" />
-              </a>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{stat.name}</p>
-              <h4 className="text-2xl font-black text-gray-900 dark:text-white capitalize">{stat.value}</h4>
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-50 dark:border-gray-700/50">
-              <a href={stat.link} className="text-xs font-bold text-primary-600 hover:text-primary-700 uppercase tracking-widest">
-                {stat.linkText}
-              </a>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </article>
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Quick Controls */}
-        <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 border border-gray-100 dark:border-gray-700 shadow-sm">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Quick Controls</h3>
-            <a href="/#/agent" className="text-sm font-bold text-primary-600 flex items-center gap-1">
-              Full Config <ArrowUpRight className="h-4 w-4" />
-            </a>
+        <article className="dash-card col-span-2">
+          <h3 className="section-title-centered">Quick Access</h3>
+          <div className="dash-link-grid">
+            <Link to="/agent" className="dash-link-card">Agent Config</Link>
+            <Link to="/agent-tasks" className="dash-link-card">Agent Tasks</Link>
+            <Link to="/drive" className="dash-link-card">Cloud Files</Link>
+            <Link to="/billing" className="dash-link-card">Billing</Link>
           </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <button
-              onClick={() => handleAgentControl('start')}
-              className="flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-transparent bg-gray-50 dark:bg-gray-900/50 hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-200 dark:hover:border-green-800 transition-all group"
-            >
-              <Play className="h-8 w-8 text-gray-400 group-hover:text-green-500 mb-2" />
-              <span className="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-green-700 dark:group-hover:text-green-400">Start</span>
-            </button>
-            <button
-              onClick={() => handleAgentControl('pause')}
-              className="flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-transparent bg-gray-50 dark:bg-gray-900/50 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:border-yellow-200 dark:hover:border-yellow-800 transition-all group"
-            >
-              <Pause className="h-8 w-8 text-gray-400 group-hover:text-yellow-500 mb-2" />
-              <span className="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-yellow-700 dark:group-hover:text-yellow-400">Pause</span>
-            </button>
-            <button
-              onClick={() => handleAgentControl('stop')}
-              className="flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-transparent bg-gray-50 dark:bg-gray-900/50 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800 transition-all group"
-            >
-              <Square className="h-8 w-8 text-gray-400 group-hover:text-red-500 mb-2" />
-              <span className="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-red-700 dark:group-hover:text-red-400">Stop</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Recent Activity Placeholder */}
-        <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Recent Activity</h3>
-            <a href="/#/agent-tasks" className="text-sm font-bold text-primary-600 flex items-center gap-1">
-              All Tasks <ArrowUpRight className="h-4 w-4" />
-            </a>
-          </div>
-
-          <div className="flex-grow flex flex-col items-center justify-center py-8 text-center">
-            <div className="h-20 w-20 bg-gray-50 dark:bg-gray-900/50 rounded-full flex items-center justify-center mb-4 border border-gray-100 dark:border-gray-700">
-              <Activity className="h-10 w-10 text-gray-300" />
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">No recent agent activity found.</p>
-            <button className="mt-4 text-xs font-black uppercase tracking-widest text-primary-600 hover:text-primary-700">
-              Trigger New Task
-            </button>
-          </div>
-        </div>
-      </div>
+        </article>
+      </section>
     </div>
   );
 };
