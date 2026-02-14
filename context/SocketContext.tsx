@@ -23,10 +23,9 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
-        // Explicitly set the path to match the backend's /api prefix
-        // And use polling first to ensure the handshake succeeds before upgrading to websocket
-        const socketInstance = io(config.AGENT_BASE_URL.replace('/api', ''), {
-            path: '/api/socket.io',
+        // Use standard /socket.io path unless a specific proxy setup is known
+        const socketInstance = io(config.AGENT_BASE_URL, {
+            path: '/socket.io',
             withCredentials: true,
             transports: ['polling', 'websocket'],
             autoConnect: true,

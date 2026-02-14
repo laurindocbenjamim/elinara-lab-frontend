@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, Play, Square, Plus, Trash2, Loader2, Info, ChevronDown, ChevronUp } from 'lucide-react';
-import { agentService, configService, processesService } from '../services/api';
-import { AgentStatus, Process } from '../types';
+import { Settings, Play, Square, Plus, Trash2, Loader2, Info, ChevronDown, ChevronUp, Database, X, Check, Edit, Trash, PlusCircle, MinusCircle } from 'lucide-react';
+import { agentService, configService, processesService, dataSourcesService } from '../services/api';
+import { AgentStatus, Process, DataSource, DataSourceCreateRequest } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useParams } from 'react-router-dom';
 
@@ -17,6 +17,17 @@ export const Agent: React.FC = () => {
     const [taskData, setTaskData] = useState({ filename: '', phone: '' });
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [showProcessDetails, setShowProcessDetails] = useState(false);
+
+    // Data Sources State
+    const [dataSources, setDataSources] = useState<DataSource[]>([]);
+    const [showDataSourceModal, setShowDataSourceModal] = useState(false);
+    const [selectedSources, setSelectedSources] = useState<number[]>([]);
+    const [isSavingDataSource, setIsSavingDataSource] = useState(false);
+    const [editingSourceId, setEditingSourceId] = useState<number | null>(null);
+    const [formData, setFormData] = useState<DataSourceCreateRequest>({
+        platform: 'google_drive',
+        items: [{ resource_identifier: '', config: {} }]
+    });
 
     useEffect(() => {
         fetchAgentData();
@@ -41,13 +52,149 @@ export const Agent: React.FC = () => {
             setSelectedModel(results[0]?.selected_model || 'gpt-4o');
             if (processId && results[2]) {
                 setProcess(results[2]);
+                fetchDataSources(parseInt(processId));
             } else {
                 setProcess(null);
+                setDataSources([]);
             }
         } catch (err) {
             console.error('Failed to fetch agent data', err);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchDataSources = async (id: number) => {
+        try {
+            const data = await dataSourcesService.list(id);
+            setDataSources(data || []);
+        } catch (err) {
+            console.error('Failed to fetch data sources', err);
+        }
+    };
+
+    const handleAddDataSourceField = () => {
+        setFormData({
+            ...formData,
+            items: [...formData.items, { resource_identifier: '', config: {} }]
+        });
+    };
+
+    const handleRemoveDataSourceField = (index: number) => {
+        const newItems = formData.items.filter((_, i) => i !== index);
+        setFormData({ ...formData, items: newItems });
+    };
+
+    const handleDataSourceItemChange = (index: number, field: string, value: any) => {
+        const newItems = [...formData.items];
+        if (field === 'config') {
+            try {
+                newItems[index] = { ...newItems[index], config: JSON.parse(value) };
+            } catch (e) {
+                // Keep as string if invalid JSON for now, will validate on submit
+                (newItems[index] as any).configRaw = value;
+            }
+        } else {
+            newItems[index] = { ...newItems[index], resource_identifier: value };
+        }
+        setFormData({ ...formData, items: newItems });
+    };
+
+    const validateForm = () => {
+        for (const item of formData.items) {
+            if (!item.resource_identifier) return "Resource Identifier is required for all items.";
+            if (formData.platform === 'external_api' && !item.resource_identifier.startsWith('http')) {
+                try { new URL(item.resource_identifier); } catch (e) { return `Invalid URL: ${item.resource_identifier}`; }
+            }
+            if ((item as any).configRaw) {
+                try { JSON.parse((item as any).configRaw); } catch (e) { return "Configuration must be a valid JSON."; }
+            }
+        }
+
+        // Ensure at least one storage and one API if not editing
+        if (!editingSourceId) {
+            const platforms = new Set(dataSources.map(s => s.platform));
+            platforms.add(formData.platform);
+            const hasStorage = platforms.has('google_drive') || platforms.has('sharepoint');
+            const hasAPI = platforms.has('external_api');
+            if (dataSources.length > 0 && (!hasStorage || !hasAPI)) {
+                console.warn("Validation warning: Agent should ideally have both storage and API sources.");
+            }
+        }
+        return null;
+    };
+
+    const handleSaveDataSources = async () => {
+        if (!processId) return;
+        const error = validateForm();
+        if (error) {
+            setMessage({ type: 'error', text: error });
+            return;
+        }
+
+        setIsSavingDataSource(true);
+        try {
+            const pId = parseInt(processId);
+            if (editingSourceId) {
+                const item = formData.items[0];
+                await dataSourcesService.update(pId, editingSourceId, {
+                    platform: formData.platform,
+                    resource_identifier: item.resource_identifier,
+                    config: item.config
+                });
+                setMessage({ type: 'success', text: 'Data source updated' });
+            } else {
+                await dataSourcesService.create(pId, formData);
+                setMessage({ type: 'success', text: 'Data sources added' });
+            }
+            fetchDataSources(pId);
+            setShowDataSourceModal(false);
+            setEditingSourceId(null);
+            setFormData({ platform: 'google_drive', items: [{ resource_identifier: '', config: {} }] });
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err.message || 'Failed to save data source' });
+        } finally {
+            setIsSavingDataSource(false);
+        }
+    };
+
+    const handleDeleteDataSource = async (id: number) => {
+        if (!processId || !window.confirm('Are you sure you want to delete this data source?')) return;
+        try {
+            await dataSourcesService.delete(parseInt(processId), id);
+            setDataSources(dataSources.filter((s: DataSource) => s.id !== id));
+            setMessage({ type: 'success', text: 'Data source deleted' });
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err.message || 'Failed to delete data source' });
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (!processId || selectedSources.length === 0 || !window.confirm(`Delete ${selectedSources.length} sources?`)) return;
+        try {
+            await dataSourcesService.bulkDelete(parseInt(processId), selectedSources);
+            setDataSources(dataSources.filter((s: DataSource) => !selectedSources.includes(s.id)));
+            setSelectedSources([]);
+            setMessage({ type: 'success', text: 'Data sources deleted' });
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err.message || 'Failed to delete data sources' });
+        }
+    };
+
+    const handleEditSource = (source: DataSource) => {
+        setEditingSourceId(source.id);
+        setFormData({
+            platform: source.platform,
+            items: [{ resource_identifier: source.resource_identifier, config: source.config || {} }]
+        });
+        setShowDataSourceModal(true);
+    };
+
+    const toggleSourceSelection = (id: number) => {
+        if (selectedSources.includes(id)) {
+            setSelectedSources(selectedSources.filter((sid: number) => sid !== id));
+        } else {
+            setSelectedSources([...selectedSources, id]);
         }
     };
 
@@ -132,6 +279,17 @@ export const Agent: React.FC = () => {
                             {showProcessDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </button>
                     )}
+                    <button
+                        onClick={() => {
+                            setEditingSourceId(null);
+                            setFormData({ platform: 'google_drive', items: [{ resource_identifier: '', config: {} }] });
+                            setShowDataSourceModal(true);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary-600 dark:bg-primary-500 rounded-xl text-xs font-bold text-white hover:bg-primary-700 dark:hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/30"
+                    >
+                        <PlusCircle className="h-4 w-4" />
+                        Add Datasource
+                    </button>
                     {isLoading && <Loader2 className="h-6 w-6 animate-spin text-primary-500" />}
                 </div>
             </div>
@@ -319,6 +477,175 @@ export const Agent: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Data Sources Table */}
+            <div className="mt-8 mb-8 bg-white dark:bg-gray-800 shadow sm:rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center">
+                        <Database className="h-5 w-5 mr-2 text-primary-500" />
+                        Configured Data Sources
+                    </h3>
+                    {selectedSources.length > 0 && (
+                        <button
+                            onClick={handleBulkDelete}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
+                        >
+                            <Trash className="h-3.5 w-3.5" />
+                            Delete Selected ({selectedSources.length})
+                        </button>
+                    )}
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-gray-50 dark:bg-gray-900/50">
+                            <tr>
+                                <th className="px-6 py-3 text-left w-10">
+                                    <input
+                                        type="checkbox"
+                                        className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+                                        onChange={(e) => {
+                                            if (e.target.checked) setSelectedSources(dataSources.map(s => s.id));
+                                            else setSelectedSources([]);
+                                        }}
+                                        checked={selectedSources.length === dataSources.length && dataSources.length > 0}
+                                    />
+                                </th>
+                                <th className="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Platform</th>
+                                <th className="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Resource Identifier</th>
+                                <th className="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Config</th>
+                                <th className="px-6 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                            {dataSources.map((source) => (
+                                <tr key={source.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                    <td className="px-6 py-4">
+                                        <input
+                                            type="checkbox"
+                                            className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+                                            checked={selectedSources.includes(source.id)}
+                                            onChange={() => toggleSourceSelection(source.id)}
+                                        />
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter ${source.platform === 'external_api' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'}`}>
+                                            {source.platform.replace('_', ' ')}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm font-medium dark:text-gray-300 truncate max-w-xs">{source.resource_identifier}</td>
+                                    <td className="px-6 py-4 text-xs font-mono text-gray-500 dark:text-gray-400">
+                                        {source.config ? JSON.stringify(source.config).substring(0, 30) + '...' : '-'}
+                                    </td>
+                                    <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                                        <button onClick={() => handleEditSource(source)} className="text-gray-400 hover:text-primary-500 p-1"><Edit className="h-4 w-4" /></button>
+                                        <button onClick={() => handleDeleteDataSource(source.id)} className="text-gray-400 hover:text-red-500 p-1"><Trash2 className="h-4 w-4" /></button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {dataSources.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400 italic">
+                                        No data sources configured for this agent yet.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Slide-over Modal (Right) */}
+            {showDataSourceModal && (
+                <div className="fixed inset-0 z-50 overflow-hidden">
+                    <div className="absolute inset-0 bg-gray-500/75 dark:bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setShowDataSourceModal(false)} />
+                    <div className="fixed inset-y-0 right-0 flex max-w-full pl-10">
+                        <div className="w-screen max-w-md transform transition-all animate-in slide-in-from-right duration-500">
+                            <div className="flex h-full flex-col bg-white dark:bg-gray-800 shadow-2xl">
+                                <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
+                                    <div>
+                                        <h2 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">
+                                            {editingSourceId ? 'Edit DataSource' : 'Add Datasource'}
+                                        </h2>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Configure how your agent accesses data.</p>
+                                    </div>
+                                    <button onClick={() => setShowDataSourceModal(false)} className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-full transition-colors">
+                                        <X className="h-6 w-6 text-gray-400" />
+                                    </button>
+                                </div>
+
+                                <div className="p-6 flex-1 overflow-y-auto space-y-8">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Platform Type</label>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {['google_drive', 'sharepoint', 'external_api'].map((p) => (
+                                                <button
+                                                    key={p}
+                                                    onClick={() => setFormData({ ...formData, platform: p as any })}
+                                                    className={`py-2 px-1 rounded-xl text-[10px] font-bold border transition-all ${formData.platform === p ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500 text-primary-700 dark:text-primary-400' : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-700 text-gray-500 hover:border-primary-200'}`}
+                                                >
+                                                    {p.replace('_', ' ').toUpperCase()}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <div className="flex justify-between items-center">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Resources & Config</label>
+                                            {!editingSourceId && (
+                                                <button onClick={handleAddDataSourceField} className="flex items-center gap-1 text-[10px] font-black text-primary-600 hover:text-primary-700 uppercase tracking-widest transition-colors">
+                                                    <PlusCircle className="h-4 w-4" /> Add Field
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {formData.items.map((item, idx) => (
+                                            <div key={idx} className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 space-y-4 relative group">
+                                                {formData.items.length > 1 && (
+                                                    <button onClick={() => handleRemoveDataSourceField(idx)} className="absolute -top-2 -right-2 p-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <MinusCircle className="h-4 w-4" />
+                                                    </button>
+                                                )}
+                                                <div>
+                                                    <label className="block text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Resource Identifier</label>
+                                                    <input
+                                                        type="text"
+                                                        value={item.resource_identifier}
+                                                        onChange={(e) => handleDataSourceItemChange(idx, 'identifier', e.target.value)}
+                                                        placeholder={formData.platform === 'external_api' ? 'https://api.example.com/v1' : 'folder-id-or-path'}
+                                                        className="block w-full px-3 py-2 rounded-lg border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-medium dark:text-white border focus:ring-1 focus:ring-primary-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Config (JSON/Optional)</label>
+                                                    <textarea
+                                                        value={typeof item.config === 'object' ? JSON.stringify(item.config, null, 2) : (item as any).configRaw || ''}
+                                                        onChange={(e) => handleDataSourceItemChange(idx, 'config', e.target.value)}
+                                                        placeholder='{"headers": {"Authorization": "Bearer ..."}}'
+                                                        rows={3}
+                                                        className="block w-full px-3 py-2 rounded-lg border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[10px] font-mono dark:text-white border focus:ring-1 focus:ring-primary-500"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                                    <button
+                                        onClick={handleSaveDataSources}
+                                        disabled={isSavingDataSource}
+                                        className="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-primary-500/30 flex items-center justify-center gap-2 disabled:opacity-50"
+                                    >
+                                        {isSavingDataSource ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
+                                        {editingSourceId ? 'Update Data Source' : 'Save Config'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

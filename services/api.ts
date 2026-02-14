@@ -13,7 +13,9 @@ import {
   AgentTaskResponse,
   AgentMatch,
   Process,
-  ProcessCreateRequest
+  ProcessCreateRequest,
+  DataSource,
+  DataSourceCreateRequest
 } from '../types';
 import { config } from '../config';
 
@@ -536,3 +538,20 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 export default apiClient;
+export const dataSourcesService = {
+  list: async (processId: number): Promise<DataSource[]> => {
+    return agentApiClient.get(`/agent/processes/${processId}/datasources`);
+  },
+  create: async (processId: number, data: DataSourceCreateRequest): Promise<DataSource[]> => {
+    return agentApiClient.post(`/agent/processes/${processId}/datasources`, data);
+  },
+  update: async (processId: number, dataSourceId: number, data: Partial<DataSource>): Promise<DataSource> => {
+    return agentApiClient.put(`/agent/processes/${processId}/datasources/${dataSourceId}`, data);
+  },
+  delete: async (processId: number, dataSourceId: number): Promise<void> => {
+    return agentApiClient.delete(`/agent/processes/${processId}/datasources/${dataSourceId}`);
+  },
+  bulkDelete: async (processId: number, dataSourceIds: number[]): Promise<void> => {
+    return agentApiClient.delete(`/agent/processes/${processId}/datasources/bulk`, { data: { ids: dataSourceIds } });
+  }
+};

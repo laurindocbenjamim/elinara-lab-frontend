@@ -169,3 +169,20 @@ export interface ProcessCreateRequest {
   trigger_type: 'manual' | 'scheduled' | 'webhook';
   config_snapshot: Record<string, any>;
 }
+export interface DataSource {
+  id: number;
+  process_id: number;
+  platform: 'google_drive' | 'sharepoint' | 'external_api';
+  resource_identifier: string;
+  config?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DataSourceCreateRequest {
+  platform: 'google_drive' | 'sharepoint' | 'external_api';
+  items: {
+    resource_identifier: string;
+    config?: Record<string, any>;
+  }[];
+}

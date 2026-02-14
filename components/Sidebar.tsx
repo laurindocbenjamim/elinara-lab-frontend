@@ -83,6 +83,14 @@ export const Sidebar: React.FC = () => {
         }
     };
 
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            handleSaveEdit();
+        } else if (e.key === 'Escape') {
+            setEditingId(null);
+        }
+    };
+
     const isActive = (path: string) => {
         return location.pathname === path || location.pathname.startsWith(path + '/');
     };
