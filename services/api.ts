@@ -539,19 +539,20 @@ if (process.env.NODE_ENV === 'development') {
 
 export default apiClient;
 export const dataSourcesService = {
-  list: async (processId: number): Promise<DataSource[]> => {
-    return agentApiClient.get(`/agent/processes/${processId}/datasources`);
+  list: async (processId?: string): Promise<DataSource[]> => {
+    const url = processId ? `/datasources?process_id=${processId}` : '/datasources';
+    return agentApiClient.get(url);
   },
-  create: async (processId: number, data: DataSourceCreateRequest): Promise<DataSource[]> => {
-    return agentApiClient.post(`/agent/processes/${processId}/datasources`, data);
+  create: async (data: DataSourceCreateRequest): Promise<{ msg: string; id: string }> => {
+    return agentApiClient.post('/datasources', data);
   },
-  update: async (processId: number, dataSourceId: number, data: Partial<DataSource>): Promise<DataSource> => {
-    return agentApiClient.put(`/agent/processes/${processId}/datasources/${dataSourceId}`, data);
+  get: async (id: string): Promise<DataSource> => {
+    return agentApiClient.get(`/datasources/${id}`);
   },
-  delete: async (processId: number, dataSourceId: number): Promise<void> => {
-    return agentApiClient.delete(`/agent/processes/${processId}/datasources/${dataSourceId}`);
+  update: async (id: string, data: Partial<DataSource>): Promise<{ msg: string }> => {
+    return agentApiClient.put(`/datasources/${id}`, data);
   },
-  bulkDelete: async (processId: number, dataSourceIds: number[]): Promise<void> => {
-    return agentApiClient.delete(`/agent/processes/${processId}/datasources/bulk`, { data: { ids: dataSourceIds } });
+  delete: async (id: string): Promise<{ msg: string }> => {
+    return agentApiClient.delete(`/datasources/${id}`);
   }
 };

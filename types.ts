@@ -170,19 +170,18 @@ export interface ProcessCreateRequest {
   config_snapshot: Record<string, any>;
 }
 export interface DataSource {
-  id: number;
-  process_id: number;
+  id: string; // Changed to string (mongo_id)
+  process_id: string; // Changed to string
   platform: 'google_drive' | 'sharepoint' | 'external_api';
   resource_identifier: string;
-  config?: Record<string, any>;
+  config?: any[]; // Default structure is a list of objects
   created_at: string;
   updated_at: string;
 }
 
 export interface DataSourceCreateRequest {
+  process_id?: string;
   platform: 'google_drive' | 'sharepoint' | 'external_api';
-  items: {
-    resource_identifier: string;
-    config?: Record<string, any>;
-  }[];
+  resource_identifier: string;
+  config: any[];
 }
