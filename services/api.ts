@@ -10,16 +10,29 @@ import {
   RegisterRequest,
   AgentStatus,
   AgentTask,
-  AgentTaskResponse
+  AgentTaskResponse,
+  AgentMatch,
+  Process,
+  ProcessCreateRequest
 } from '../types';
 import { config } from '../config';
 
 const API_BASE_URL = config.API_BASE_URL;
+const AGENT_BASE_URL = config.AGENT_BASE_URL;
 
-// Create centralized Axios instance
+// Create centralized Axios instance for main backend
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // Para cookies HttpOnly
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Create Axios instance for Agent service
+const agentApiClient = axios.create({
+  baseURL: AGENT_BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -35,15 +48,8 @@ const getCookie = (name: string): string | null => {
   return null;
 };
 
-// Helper para remover cookie
-const deleteCookie = (name: string): void => {
-  if (typeof document === 'undefined') return;
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-};
-
-// Cache para evitar múltiplas verificações
+// Cache para evitar múltiplas verificacje
 let csrfTokenValidated = false;
-let csrfValidationInProgress = false;
 
 // Verificar se método precisa de CSRF
 const requiresCsrfToken = (method?: string): boolean => {
@@ -73,51 +79,56 @@ const getCsrfTokenFromCookie = (): string | null => {
   );
 };
 
-// Request Interceptor
+// Request Interceptor para o backend principal
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     // Para métodos que modificam estado, adicionar CSRF token
     if (requiresCsrfToken(config.method)) {
       const csrfToken = getCsrfTokenFromCookie();
-
+      /*console.log('CSRF token encontrado para requisição principal:', {
+        method: config.method,
+        url: config.url,
+        csrfToken
+      });*/
       if (csrfToken) {
         config.headers['X-CSRF-Token'] = csrfToken;
       } else {
-        console.warn('CSRF token não encontrado para requisição:', {
+        console.warn('CSRF token não encontrado para requisição principal:', {
           method: config.method,
-          url: config.url,
-          requiresCsrf: requiresCsrfToken(config.method)
+          url: config.url
         });
-
-        // Se é uma requisição crítica (não GET), logamos o aviso
-        if (config.method?.toUpperCase() !== 'GET') {
-          console.warn('Atenção: Requisição sem CSRF token enviado. O backend pode rejeitar.');
-        }
       }
     }
 
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response Interceptor
+// Request Interceptor para o serviço do Agent (compartilha CSRF do mesmo domínio)
+agentApiClient.interceptors.request.use(
+  async (config: InternalAxiosRequestConfig) => {
+    if (requiresCsrfToken(config.method)) {
+      const csrfToken = getCsrfTokenFromCookie();
+      if (csrfToken) {
+        config.headers['X-CSRF-Token'] = csrfToken;
+      } else {
+        console.warn('CSRF token não encontrado para requisição do Agent');
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response Interceptor para o backend principal
 apiClient.interceptors.response.use(
   (response) => {
-    // Verificar se a resposta contém um novo CSRF token
-    // (útil para refresh de sessão ou após login)
-    if (response.headers['x-csrf-token'] || response.data?.csrf_token) {
-      const newCsrfToken = response.headers['x-csrf-token'] || response.data.csrf_token;
-      // O backend deve definir o cookie, mas mantemos lógica para segurança
-      console.debug('Novo CSRF token recebido na resposta');
-    }
-
     return response.data;
   },
   async (error: AxiosError) => {
     const originalRequest = error.config as any;
+    // ... (existing logic)
 
     if (error.response) {
       const status = error.response.status;
@@ -234,6 +245,17 @@ apiClient.interceptors.response.use(
     networkError.code = error.code;
 
     return Promise.reject(networkError);
+  }
+);
+
+// Response Interceptor para o serviço do Agent (simplificado)
+agentApiClient.interceptors.response.use(
+  (response) => {
+    return response.data;
+  },
+  (error) => {
+    // Możemy tu dodać specyficzną logikę dla błędów agenta, jeśli potrzeba
+    return Promise.reject(error);
   }
 );
 
@@ -443,34 +465,61 @@ export const cloudFilesService = {
 // FundingDetective Agent Service
 export const agentService = {
   getStatus: async (): Promise<AgentStatus> => {
-    return apiClient.get('/agent/status');
+    return agentApiClient.get('/agent/status');
   },
 
-  control: async (action: 'start' | 'stop' | 'pause'): Promise<{ msg: string; status: string }> => {
-    return apiClient.post('/agent/control', { action });
+  control: async (action: 'start' | 'stop' | 'pause', user_id?: number, process_id?: number): Promise<{ msg: string; status: string }> => {
+    return agentApiClient.post('/agent/control', { action, user_id, process_id });
   },
 
   updateConfig: async (model: string): Promise<{ msg: string; selected_model: string }> => {
-    return apiClient.post('/agent/config', { model });
+    return agentApiClient.post('/agent/config', { model });
   },
 
   triggerTask: async (filename: string, phone: string): Promise<AgentTaskResponse> => {
-    return apiClient.post('/agent/task', { filename, phone });
+    return agentApiClient.post('/agent/task', { filename, phone });
   },
 
   getTaskStatus: async (taskId: string): Promise<AgentTask> => {
-    return apiClient.get(`/agent/task/${taskId}`);
+    return agentApiClient.get(`/agent/task/${taskId}`);
+  },
+
+  getMatches: async (): Promise<AgentMatch[]> => {
+    return agentApiClient.get('/agent/matches');
   }
 };
 
 // Configuration Service
 export const configService = {
   getConnectionEmails: async (): Promise<{ connection_emails: string[] }> => {
-    return apiClient.get('/config/connection-emails');
+    return agentApiClient.get('/config/connection-emails');
   },
 
   updateConnectionEmails: async (emails: string[]): Promise<GenericResponse> => {
-    return apiClient.post('/config/connection-emails', { connection_emails: emails });
+    return agentApiClient.post('/config/connection-emails', { connection_emails: emails });
+  }
+};
+
+// Processes Service
+export const processesService = {
+  list: async (): Promise<Process[]> => {
+    return apiClient.get('/admin/processes');
+  },
+
+  create: async (data: ProcessCreateRequest): Promise<Process> => {
+    return apiClient.post('/admin/processes', data);
+  },
+
+  get: async (id: number): Promise<Process> => {
+    return apiClient.get(`/admin/processes/${id}`);
+  },
+
+  update: async (id: number, data: Partial<Process>): Promise<Process> => {
+    return apiClient.put(`/admin/processes/${id}`, data);
+  },
+
+  delete: async (id: number): Promise<GenericResponse> => {
+    return apiClient.delete(`/admin/processes/${id}`);
   }
 };
 

@@ -23,11 +23,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
-        // API_BASE_URL might include /api/v1, but Socket.io usually connects to the root or a specific path
-        // We'll use the base URL from config and let socket.io handle the connection
-        const socketInstance = io(config.API_BASE_URL, {
+        // Explicitly set the path to match the backend's /api prefix
+        // And use polling first to ensure the handshake succeeds before upgrading to websocket
+        const socketInstance = io(config.AGENT_BASE_URL.replace('/api', ''), {
+            path: '/api/socket.io',
             withCredentials: true,
-            transports: ['websocket', 'polling'],
+            transports: ['polling', 'websocket'],
             autoConnect: true,
         });
 

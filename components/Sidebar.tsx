@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
     BrainCircuit,
@@ -7,22 +7,81 @@ import {
     HardDrive,
     CreditCard,
     Settings,
-    ChevronRight
+    ChevronRight,
+    Plus,
+    Loader2,
+    Activity
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { processesService } from '../services/api';
+import { Process } from '../types';
 
 export const Sidebar: React.FC = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     const { user } = useAuth();
 
     const menuItems = [
         { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-        { name: 'FundingDetective', icon: BrainCircuit, path: '/agent' },
-        { name: 'Agent Tasks', icon: ListTodo, path: '/agent-tasks' },
         { name: 'Cloud Files', icon: HardDrive, path: '/drive' },
         { name: 'Billing', icon: CreditCard, path: '/billing' },
         { name: 'Settings', icon: Settings, path: '/profile' },
+        { name: 'Agent Actions', icon: Activity, path: '/agent-actions' },
     ];
+
+    const [processes, setProcesses] = React.useState<Process[]>([]);
+    const [isCreating, setIsCreating] = React.useState(false);
+
+    React.useEffect(() => {
+        const fetchProcesses = async () => {
+            try {
+                const data = await processesService.list();
+                setProcesses(Array.isArray(data) ? data : (data as any).processes || []);
+            } catch (err) {
+                console.error('Failed to fetch processes', err);
+            }
+        };
+        fetchProcesses();
+    }, []);
+
+    const handleCreateAgent = async () => {
+        setIsCreating(true);
+        try {
+            const newProcess = await processesService.create({
+                name: `Agent ${processes.length + 1}`,
+                trigger_type: 'manual',
+                config_snapshot: {}
+            });
+            setProcesses([newProcess, ...processes]);
+            navigate(`/agent/${newProcess.id}`);
+        } catch (err) {
+            console.error('Failed to create agent', err);
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
+    const [editingId, setEditingId] = React.useState<number | null>(null);
+    const [editName, setEditName] = React.useState('');
+
+    const handleStartEdit = (e: React.MouseEvent, process: Process) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setEditingId(process.id);
+        setEditName(process.name);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingId) return;
+        try {
+            await processesService.update(editingId, { name: editName });
+            setProcesses(processes.map(p => p.id === editingId ? { ...p, name: editName } : p));
+            setEditingId(null);
+        } catch (err) {
+            console.error('Failed to update process name', err);
+            setEditingId(null);
+        }
+    };
 
     const isActive = (path: string) => {
         return location.pathname === path || location.pathname.startsWith(path + '/');
@@ -61,6 +120,79 @@ export const Sidebar: React.FC = () => {
                             </Link>
                         );
                     })}
+
+                    <div className="pt-4 pb-2">
+                        <div className="flex items-center justify-between px-3 mb-2">
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Your Agents</span>
+                            <button
+                                onClick={handleCreateAgent}
+                                disabled={isCreating}
+                                className="p-1 hover:bg-primary-50 dark:hover:bg-primary-900/30 text-primary-600 rounded-lg transition-colors disabled:opacity-50"
+                                title="Create New Agent"
+                            >
+                                {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                            </button>
+                        </div>
+                        <div className="space-y-1">
+                            {processes.map((process) => {
+                                const path = `/agent/${process.id}`;
+                                const active = isActive(path);
+                                const isEditing = editingId === process.id;
+
+                                return (
+                                    <div
+                                        key={process.id}
+                                        onDoubleClick={(e) => handleStartEdit(e, process)}
+                                        className="relative"
+                                    >
+                                        {isEditing ? (
+                                            <div className="px-3 py-2">
+                                                <input
+                                                    autoFocus
+                                                    value={editName}
+                                                    onChange={(e) => setEditName(e.target.value)}
+                                                    onBlur={handleSaveEdit}
+                                                    onKeyDown={handleKeyPress}
+                                                    className="w-full bg-white dark:bg-gray-700 border border-primary-500 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:text-white shadow-sm"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <Link
+                                                to={path}
+                                                className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group ${active
+                                                    ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
+                                                    : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50 dark:hover:text-gray-200'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <BrainCircuit className={`h-5 w-5 ${active ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'}`} />
+                                                    <span className="text-sm font-medium truncate max-w-[120px]">{process.name}</span>
+                                                </div>
+                                                {active && <ChevronRight className="h-4 w-4" />}
+                                            </Link>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                            {processes.length === 0 && !isCreating && (
+                                <p className="px-3 py-2 text-xs text-gray-500 italic">No agents created yet.</p>
+                            )}
+                        </div>
+                    </div>
+
+                    <Link
+                        to="/agent-tasks"
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group ${isActive('/agent-tasks')
+                            ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
+                            : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50 dark:hover:text-gray-200'
+                            }`}
+                    >
+                        <div className="flex items-center gap-3">
+                            <ListTodo className={`h-5 w-5 ${isActive('/agent-tasks') ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'}`} />
+                            <span className="text-sm font-medium">Agent Tasks</span>
+                        </div>
+                        {isActive('/agent-tasks') && <ChevronRight className="h-4 w-4" />}
+                    </Link>
                 </nav>
             </div>
 

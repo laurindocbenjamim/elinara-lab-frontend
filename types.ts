@@ -107,6 +107,7 @@ export interface AgentStatus {
   agent_status: 'active' | 'stopped' | 'paused';
   plan: string;
   selected_model: string;
+  id?: number;
 }
 
 export interface AgentControlRequest {
@@ -140,4 +141,31 @@ export interface AgentTask {
 
 export interface ConnectionEmailsRequest {
   connection_emails: string[];
+}
+export interface AgentMatch {
+  id: number;
+  aviso_id: string;
+  title: string;
+  match_score: number;
+  reasoning?: string;
+  matched_at: string;
+  task_id?: string;
+}
+
+// Process API Types
+export interface Process {
+  id: number;
+  user_id: number;
+  name: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  trigger_type: 'manual' | 'scheduled' | 'webhook';
+  config_snapshot: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProcessCreateRequest {
+  name: string;
+  trigger_type: 'manual' | 'scheduled' | 'webhook';
+  config_snapshot: Record<string, any>;
 }
