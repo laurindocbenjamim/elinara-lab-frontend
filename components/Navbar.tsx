@@ -94,6 +94,12 @@ export const Navbar: React.FC = () => {
                         <Moon className="h-4 w-4" /> Dark
                       </button>
                       <button
+                        onClick={() => { setTheme('black'); setIsSettingsOpen(false); }}
+                        className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${theme === 'black' ? 'bg-primary-50 text-primary-700 dark:bg-gray-700 dark:text-primary-400' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+                      >
+                        <Monitor className="h-4 w-4" /> Black
+                      </button>
+                      <button
                         onClick={() => { setTheme('system'); setIsSettingsOpen(false); }}
                         className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${theme === 'system' ? 'bg-primary-50 text-primary-700 dark:bg-gray-700 dark:text-primary-400' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'}`}
                       >

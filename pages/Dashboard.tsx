@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { BrainCircuit, HardDrive, CreditCard, Play, Square, ArrowUpRight, Activity, Loader2 } from 'lucide-react';
+import { BrainCircuit, HardDrive, CreditCard, Play, Square, ArrowUpRight, Activity } from 'lucide-react';
 import { agentService, cloudFilesService } from '../services/api';
 import { AgentStatus, AuthStatus } from '../types';
 
@@ -38,7 +38,8 @@ export const Dashboard: React.FC = () => {
       const res = await agentService.control(
         action,
         user?.id,
-        agentStatus?.id || undefined
+        agentStatus?.id || undefined,
+        user?.email
       );
       setMessage({ type: 'success', text: res.msg });
       // Refresh status
@@ -133,27 +134,24 @@ export const Dashboard: React.FC = () => {
             </a>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={() => handleAgentControl('start')}
-              className={`flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-transparent transition-all group ${agentStatus?.agent_status === 'active' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-gray-50 dark:bg-gray-900/50 hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-200 dark:hover:border-green-800'}`}
-            >
-              {agentStatus?.agent_status === 'active' ? (
-                <Loader2 className="h-8 w-8 text-green-500 mb-2 animate-spin" />
-              ) : (
-                <Play className="h-8 w-8 text-gray-400 group-hover:text-green-500 mb-2" />
-              )}
-              <span className={`text-xs font-bold ${agentStatus?.agent_status === 'active' ? 'text-green-700 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>
-                {agentStatus?.agent_status === 'active' ? 'Running' : 'Start'}
-              </span>
-            </button>
-            <button
-              onClick={() => handleAgentControl('stop')}
-              className="flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-transparent bg-gray-50 dark:bg-gray-900/50 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800 transition-all group"
-            >
-              <Square className="h-8 w-8 text-gray-400 group-hover:text-red-500 mb-2" />
-              <span className="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-red-700 dark:group-hover:text-red-400">Stop</span>
-            </button>
+          <div className="w-full">
+            {agentStatus?.agent_status === 'active' ? (
+              <button
+                onClick={() => handleAgentControl('stop')}
+                className="w-full flex flex-col items-center justify-center p-6 rounded-3xl border-2 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all group"
+              >
+                <Square className="h-10 w-10 text-red-500 mb-2" />
+                <span className="text-sm font-black text-red-700 dark:text-red-400 uppercase tracking-widest">Stop Matching Agent</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => handleAgentControl('start')}
+                className="w-full flex flex-col items-center justify-center p-6 rounded-3xl border-2 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 transition-all group"
+              >
+                <Play className="h-10 w-10 text-green-500 mb-2" />
+                <span className="text-sm font-black text-green-700 dark:text-green-400 uppercase tracking-widest">Start Matching Agent</span>
+              </button>
+            )}
           </div>
         </div>
 

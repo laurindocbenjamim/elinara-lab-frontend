@@ -470,8 +470,8 @@ export const agentService = {
     return agentApiClient.get('/agent/status');
   },
 
-  control: async (action: 'start' | 'stop' | 'pause', user_id?: number, process_id?: number): Promise<{ msg: string; status: string }> => {
-    return agentApiClient.post('/agent/control', { action, user_id, process_id });
+  control: async (action: 'start' | 'stop' | 'pause', user_id?: number, process_id?: number, email?: string): Promise<{ msg: string; status: string }> => {
+    return agentApiClient.post('/agent/control', { action, user_id, process_id, email });
   },
 
   updateConfig: async (model: string): Promise<{ msg: string; selected_model: string }> => {

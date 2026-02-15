@@ -8,6 +8,8 @@ import {
     CreditCard,
     Settings,
     ChevronRight,
+    ChevronUp,
+    ChevronDown,
     Plus,
     Loader2,
     Activity
@@ -95,6 +97,8 @@ export const Sidebar: React.FC = () => {
         return location.pathname === path || location.pathname.startsWith(path + '/');
     };
 
+    const [isAgentsExpanded, setIsAgentsExpanded] = React.useState(true);
+
     return (
         <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 hidden lg:flex flex-col sticky top-16 h-[calc(100vh-4rem)] transition-colors duration-200 overflow-y-auto">
             <div className="p-6">
@@ -129,62 +133,76 @@ export const Sidebar: React.FC = () => {
                         );
                     })}
 
-                    <div className="pt-4 pb-2">
-                        <div className="flex items-center justify-between px-3 mb-2">
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Your Agents</span>
+                    <div className="pt-6 pb-2">
+                        <div className="flex items-center justify-between px-4 mb-4">
+                            <button
+                                onClick={() => setIsAgentsExpanded(!isAgentsExpanded)}
+                                className="flex items-center gap-2 group/header"
+                            >
+                                <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest group-hover/header:text-gray-600 dark:group-hover/header:text-gray-300 transition-colors">Your Agents</span>
+                                {isAgentsExpanded ? (
+                                    <ChevronUp className="h-3 w-3 text-gray-400 group-hover/header:text-gray-600 transition-colors" />
+                                ) : (
+                                    <ChevronDown className="h-3 w-3 text-gray-400 group-hover/header:text-gray-600 transition-colors" />
+                                )}
+                            </button>
                             <button
                                 onClick={handleCreateAgent}
                                 disabled={isCreating}
                                 className="p-1 hover:bg-primary-50 dark:hover:bg-primary-900/30 text-primary-600 rounded-lg transition-colors disabled:opacity-50"
                                 title="Create New Agent"
                             >
-                                {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                                {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 text-primary-500" />}
                             </button>
                         </div>
-                        <div className="space-y-1">
-                            {processes.map((process) => {
-                                const path = `/agent/${process.id}`;
-                                const active = isActive(path);
-                                const isEditing = editingId === process.id;
+                        <div className={`grid transition-all duration-300 ease-in-out ${isAgentsExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                            <div className="overflow-hidden">
+                                <div className="space-y-1.5 px-6 pb-2">
+                                    {processes.map((process) => {
+                                        const path = `/agent/${process.id}`;
+                                        const active = isActive(path);
+                                        const isEditing = editingId === process.id;
 
-                                return (
-                                    <div
-                                        key={process.id}
-                                        onDoubleClick={(e) => handleStartEdit(e, process)}
-                                        className="relative"
-                                    >
-                                        {isEditing ? (
-                                            <div className="px-3 py-2">
-                                                <input
-                                                    autoFocus
-                                                    value={editName}
-                                                    onChange={(e) => setEditName(e.target.value)}
-                                                    onBlur={handleSaveEdit}
-                                                    onKeyDown={handleKeyPress}
-                                                    className="w-full bg-white dark:bg-gray-700 border border-primary-500 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:text-white shadow-sm"
-                                                />
-                                            </div>
-                                        ) : (
-                                            <Link
-                                                to={path}
-                                                className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group ${active
-                                                    ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
-                                                    : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50 dark:hover:text-gray-200'
-                                                    }`}
+                                        return (
+                                            <div
+                                                key={process.id}
+                                                onDoubleClick={(e) => handleStartEdit(e, process)}
+                                                className="relative"
                                             >
-                                                <div className="flex items-center gap-3">
-                                                    <BrainCircuit className={`h-5 w-5 ${active ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'}`} />
-                                                    <span className="text-sm font-medium truncate max-w-[120px]">{process.name}</span>
-                                                </div>
-                                                {active && <ChevronRight className="h-4 w-4" />}
-                                            </Link>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                            {processes.length === 0 && !isCreating && (
-                                <p className="px-3 py-2 text-xs text-gray-500 italic">No agents created yet.</p>
-                            )}
+                                                {isEditing ? (
+                                                    <div className="py-2">
+                                                        <input
+                                                            autoFocus
+                                                            value={editName}
+                                                            onChange={(e) => setEditName(e.target.value)}
+                                                            onBlur={handleSaveEdit}
+                                                            onKeyDown={handleKeyPress}
+                                                            className="w-full bg-white dark:bg-gray-700 border border-primary-500 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:text-white shadow-sm"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <Link
+                                                        to={path}
+                                                        className={`flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all duration-300 group ${active
+                                                            ? 'bg-primary-50/80 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400 ring-1 ring-primary-100 dark:ring-primary-800'
+                                                            : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50'
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <BrainCircuit className={`h-4 w-4 ${active ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 group-hover:text-gray-600'}`} />
+                                                            <span className={`text-sm ${active ? 'font-bold' : 'font-medium'}`}>{process.name}</span>
+                                                        </div>
+                                                        {active && <ChevronRight className="h-4 w-4" />}
+                                                    </Link>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                    {processes.length === 0 && !isCreating && (
+                                        <p className="px-4 py-2 text-[10px] text-gray-400 italic font-medium">No agents active</p>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
