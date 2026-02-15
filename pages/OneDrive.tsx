@@ -4,8 +4,9 @@ import {
     Cloud, ChevronRight,
     Search, Folder, File, FileText, Image as ImageIcon,
     Music, Video, Grid, List,
-    HardDrive, Download, Info, MoreVertical, Share2, LogOut
+    HardDrive, Download, Info, MoreVertical, Share2, LogOut, Star, ExternalLink
 } from 'lucide-react';
+import { AgentSelectModal } from '../components/AgentSelectModal';
 import { useAuth } from '../context/AuthContext';
 import { oneDriveService, authService } from '../services/api';
 import { DriveFile } from '../types';
@@ -24,6 +25,8 @@ export const OneDrive: React.FC = () => {
     const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false);
     const [isDisconnecting, setIsDisconnecting] = useState(false);
     const [disconnectError, setDisconnectError] = useState<string | null>(null);
+    const [selectedFiles, setSelectedFiles] = useState<DriveFile[]>([]);
+    const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
     // const [isConnected, setIsConnected] = useState(false);
 
     const isConnected = user?.providers?.['microsoft']?.connected || false;
@@ -132,8 +135,12 @@ export const OneDrive: React.FC = () => {
             setCurrentFolderId(file.id);
             setBreadcrumbs([...breadcrumbs, { id: file.id, name: file.name }]);
             setSearchQuery(''); // Clear search when entering a folder
-        } else if (file.webViewLink) {
-            window.open(file.webViewLink, '_blank');
+        } else {
+            if (selectedFiles.find(sf => sf.id === file.id)) {
+                setSelectedFiles(selectedFiles.filter(sf => sf.id !== file.id));
+            } else {
+                setSelectedFiles([...selectedFiles, file]);
+            }
         }
     };
 
@@ -162,7 +169,7 @@ export const OneDrive: React.FC = () => {
             num /= 1024;
             i++;
         }
-        return `${num.toFixed(1)} ${units[i]}`;
+        return `${num.toFixed(1)} ${units[i]} `;
     };
 
     const filteredFiles = useMemo(() => {
@@ -211,7 +218,17 @@ export const OneDrive: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
+
+                    <div className="flex items-center gap-4">
+                        {selectedFiles.length > 0 && (
+                            <button
+                                onClick={() => setIsAgentModalOpen(true)}
+                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-primary-500/30 animate-in fade-in slide-in-from-left-4 duration-300"
+                            >
+                                <Star className="h-4 w-4" />
+                                Send to Agent ({selectedFiles.length})
+                            </button>
+                        )}
                         {isConnected && (
                             <div className="flex items-center gap-2 mr-2">
                                 {connectedEmail && (
@@ -326,13 +343,13 @@ export const OneDrive: React.FC = () => {
                                     <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
                                         <button
                                             onClick={() => setViewMode('list')}
-                                            className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                                            className={`p - 1.5 rounded - lg transition - all ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'} `}
                                         >
                                             <List className="h-5 w-5" />
                                         </button>
                                         <button
                                             onClick={() => setViewMode('grid')}
-                                            className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                                            className={`p - 1.5 rounded - lg transition - all ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'} `}
                                         >
                                             <Grid className="h-5 w-5" />
                                         </button>
@@ -367,9 +384,27 @@ export const OneDrive: React.FC = () => {
                                         {filteredFiles.map((file) => (
                                             <div
                                                 key={file.id}
+                                                className={`group relative bg-white dark:bg-gray-800 border transition-all p-4 rounded-2xl hover:shadow-xl cursor-pointer ${selectedFiles.find(sf => sf.id === file.id)
+                                                    ? 'border-primary-500 bg-primary-50/30 ring-1 ring-primary-500'
+                                                    : 'border-gray-100 dark:border-gray-700 hover:border-blue-100 dark:hover:border-blue-900'
+                                                    }`}
                                                 onClick={() => handleFileClick(file)}
-                                                className="group relative bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-4 rounded-2xl hover:shadow-xl hover:border-blue-100 dark:hover:border-blue-900 transition-all cursor-pointer"
                                             >
+                                                <div className="absolute top-2 left-2 z-10">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={!!selectedFiles.find(sf => sf.id === file.id)}
+                                                        onChange={(e) => {
+                                                            e.stopPropagation();
+                                                            if (e.target.checked) {
+                                                                setSelectedFiles([...selectedFiles, file]);
+                                                            } else {
+                                                                setSelectedFiles(selectedFiles.filter(sf => sf.id !== file.id));
+                                                            }
+                                                        }}
+                                                        className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                                                    />
+                                                </div>
                                                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                                     <button
                                                         onClick={(e) => {
@@ -383,6 +418,16 @@ export const OneDrive: React.FC = () => {
 
                                                     {activeMenuId === file.id && (
                                                         <div className="absolute right-0 top-8 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100 drive-menu-content">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (file.webViewLink) window.open(file.webViewLink, '_blank');
+                                                                    setActiveMenuId(null);
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 font-bold hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                                            >
+                                                                <ExternalLink className="h-4 w-4" /> Open
+                                                            </button>
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
@@ -444,10 +489,24 @@ export const OneDrive: React.FC = () => {
                                                     <tr
                                                         key={file.id}
                                                         onClick={() => handleFileClick(file)}
-                                                        className="hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer group"
+                                                        className={`hover: bg - blue - 50 / 50 dark: hover: bg - blue - 900 / 20 transition - colors cursor - pointer group ${selectedFiles.find(sf => sf.id === file.id) ? 'bg-primary-50/30' : ''
+                                                            } `}
                                                     >
                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                             <div className="flex items-center">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={!!selectedFiles.find(sf => sf.id === file.id)}
+                                                                    onChange={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if (e.target.checked) {
+                                                                            setSelectedFiles([...selectedFiles, file]);
+                                                                        } else {
+                                                                            setSelectedFiles(selectedFiles.filter(sf => sf.id !== file.id));
+                                                                        }
+                                                                    }}
+                                                                    className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-4 cursor-pointer"
+                                                                />
                                                                 <div className="flex-shrink-0 mr-3">
                                                                     {getFileIcon(file)}
                                                                 </div>
@@ -493,6 +552,17 @@ export const OneDrive: React.FC = () => {
                     }
                 </div>
             </main>
+
+            <AgentSelectModal
+                isOpen={isAgentModalOpen}
+                onClose={() => setIsAgentModalOpen(false)}
+                filesData={selectedFiles.map(f => ({
+                    id: f.id,
+                    name: f.name,
+                    type: f.mimeType || 'unknown',
+                    provider: 'microsoft'
+                }))}
+            />
         </div>
     );
 };

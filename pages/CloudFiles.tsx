@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { cloudService } from '../services/api';
-import { CloudFilesResponse, CloudFile } from '../types';
-import { File, Folder, HardDrive, AlertTriangle, ExternalLink, RefreshCw } from 'lucide-react';
+import { CloudFilesResponse } from '../types';
+import { File, Folder, HardDrive, AlertTriangle, ExternalLink, RefreshCw, Star } from 'lucide-react';
+import { AgentSelectModal } from '../components/AgentSelectModal';
 
 export const CloudFiles: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<CloudFilesResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [selectedFiles, setSelectedFiles] = useState<Array<{ id: string, name: string, type: string, provider: string }>>([]);
+    const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
 
     const fetchData = async () => {
         setLoading(true);
@@ -52,12 +55,23 @@ export const CloudFiles: React.FC = () => {
                     <HardDrive className="h-6 w-6 text-primary-600" />
                     Unified Cloud Storage
                 </h1>
-                <button
-                    onClick={fetchData}
-                    className="flex items-center gap-1 text-sm text-primary-600 hover:text-primary-800"
-                >
-                    <RefreshCw className="h-4 w-4" /> Refresh
-                </button>
+                <div className="flex items-center gap-4">
+                    {selectedFiles.length > 0 && (
+                        <button
+                            onClick={() => setIsAgentModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-primary-500/30 animate-in fade-in slide-in-from-left-4 duration-300"
+                        >
+                            <Star className="h-4 w-4" />
+                            Send to Agent ({selectedFiles.length})
+                        </button>
+                    )}
+                    <button
+                        onClick={fetchData}
+                        className="flex items-center gap-1 text-sm text-primary-600 hover:text-primary-800"
+                    >
+                        <RefreshCw className="h-4 w-4" /> Refresh
+                    </button>
+                </div>
             </div>
 
             {data?.data.map((providerData) => (
@@ -96,8 +110,31 @@ export const CloudFiles: React.FC = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {providerData.files && providerData.files.length > 0 ? (
                                     providerData.files.map((file) => (
-                                        <div key={file.id} className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500">
-                                            <div className="flex-shrink-0">
+                                        <div
+                                            key={file.id}
+                                            className={`relative rounded-2xl border transition-all flex items-center space-x-3 p-5 ${selectedFiles.find(sf => sf.id === file.id)
+                                                ? 'border-primary-500 bg-primary-50/30 ring-1 ring-primary-500'
+                                                : 'border-gray-200 bg-white hover:border-gray-300'
+                                                }`}
+                                        >
+                                            <div className="flex-shrink-0 flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!!selectedFiles.find(sf => sf.id === file.id)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setSelectedFiles([...selectedFiles, {
+                                                                id: file.id,
+                                                                name: file.name,
+                                                                type: file.type,
+                                                                provider: providerData.provider
+                                                            }]);
+                                                        } else {
+                                                            setSelectedFiles(selectedFiles.filter(sf => sf.id !== file.id));
+                                                        }
+                                                    }}
+                                                    className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-3 cursor-pointer"
+                                                />
                                                 {/* Simple icon logic */}
                                                 {file.type.includes('folder') ? (
                                                     <Folder className="h-10 w-10 text-yellow-400" />
@@ -112,7 +149,26 @@ export const CloudFiles: React.FC = () => {
                                                     <p className="text-xs text-gray-500 truncate">{file.type}</p>
                                                 </a>
                                             </div>
-                                            <ExternalLink className="h-4 w-4 text-gray-300" />
+                                            <div className="flex flex-col gap-2">
+                                                <ExternalLink className="h-4 w-4 text-gray-300 hover:text-primary-500 cursor-pointer" onClick={() => window.open(file.webViewLink, '_blank')} />
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setSelectedFiles([{
+                                                            id: file.id,
+                                                            name: file.name,
+                                                            type: file.type,
+                                                            provider: providerData.provider
+                                                        }]);
+                                                        setIsAgentModalOpen(true);
+                                                    }}
+                                                    className="p-1 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded text-gray-400 hover:text-primary-500 transition-colors"
+                                                    title="Send only this to Agent"
+                                                >
+                                                    <Star className="h-4 w-4" />
+                                                </button>
+                                            </div>
                                         </div>
                                     ))
                                 ) : (
@@ -129,6 +185,12 @@ export const CloudFiles: React.FC = () => {
                     No providers connected. Please connect a provider in the Dashboard.
                 </div>
             )}
+
+            <AgentSelectModal
+                isOpen={isAgentModalOpen}
+                onClose={() => setIsAgentModalOpen(false)}
+                filesData={selectedFiles}
+            />
         </div>
     );
 };

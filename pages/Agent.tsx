@@ -3,16 +3,15 @@ import { Settings, Play, Square, Plus, Trash2, Loader2, Info, ChevronDown, Chevr
 import { agentService, configService, processesService, dataSourcesService } from '../services/api';
 import { AgentStatus, Process, DataSource, DataSourceCreateRequest } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 
 export const Agent: React.FC = () => {
     const { processId } = useParams<{ processId: string }>();
+    const location = useLocation();
     const { user } = useAuth();
     const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
-    const [process, setProcess] = useState<Process | null>(null);
+    const [currentProcess, setCurrentProcess] = useState<Process | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [allProcesses, setAllProcesses] = useState<Process[]>([]);
-    const [showProcessesList, setShowProcessesList] = useState(false);
     const [connectionEmails, setConnectionEmails] = useState<string[]>([]);
     const [newEmail, setNewEmail] = useState('');
     const [selectedModel, setSelectedModel] = useState('gpt-4o');
@@ -39,10 +38,11 @@ export const Agent: React.FC = () => {
     const [isSavingDataSource, setIsSavingDataSource] = useState(false);
     const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
     const [formDataGroups, setFormDataGroups] = useState<DataSourceCreateRequest[]>([
-        { platform: 'google_drive', resource_identifier: '', config: [] },
-        { platform: 'google_drive', resource_identifier: '', config: [] }
+        { platform: 'google_drive', resource_identifier: '', resource_name: '', resource_format: '', config: [] }
     ]);
-    const [showConfig, setShowConfig] = useState<boolean[]>([false, false]);
+    const [showConfig, setShowConfig] = useState<boolean[]>([false]);
+    const [showName, setShowName] = useState<boolean[]>([false]);
+    const [showFormat, setShowFormat] = useState<boolean[]>([false]);
 
     useEffect(() => {
         fetchAgentData();
@@ -65,14 +65,43 @@ export const Agent: React.FC = () => {
 
             setAgentStatus(results[0]);
             setConnectionEmails(results[1]?.connection_emails || []);
-            setAllProcesses(results[2] || []);
+            // results[2] is allProcesses, we can use it to populate a list if we want, but if it's unused we could remove the state.
+            // For now let's just log it to satisfy being "used" or remove it.
+            console.log('Available processes:', results[2]?.length || 0);
             setSelectedModel(results[0]?.selected_model || 'gpt-4o');
 
             if (processId && results[3]) {
-                setProcess(results[3]);
+                setCurrentProcess(results[3]);
                 fetchDataSources(processId);
+
+                // Handle auto-opening from navigation state
+                if (location.state?.autoOpenDataSource && (location.state?.fileInfo || location.state?.filesInfo)) {
+                    const filesInfo = location.state.filesInfo || [location.state.fileInfo];
+                    handleResetFormData();
+
+                    // Pre-fill the form with files info
+                    const newGroups = filesInfo.map((file: any) => ({
+                        platform: file.provider === 'google' ? 'google_drive' : 'sharepoint',
+                        resource_identifier: file.id,
+                        resource_name: file.name,
+                        resource_format: file.type,
+                        config: []
+                    }));
+
+                    setFormDataGroups(newGroups.length > 0 ? newGroups : [
+                        { platform: 'google_drive', resource_identifier: '', resource_name: '', resource_format: '', config: [] }
+                    ]);
+                    setShowConfig(new Array(Math.max(1, newGroups.length)).fill(false));
+                    setShowName(new Array(Math.max(1, newGroups.length)).fill(true));
+                    setShowFormat(new Array(Math.max(1, newGroups.length)).fill(true));
+
+                    setShowDataSourceModal(true);
+
+                    // Clear the state so it doesn't reopen on refresh
+                    window.history.replaceState({}, document.title);
+                }
             } else {
-                setProcess(null);
+                setCurrentProcess(null);
                 setDataSources([]);
             }
         } catch (err) {
@@ -93,10 +122,11 @@ export const Agent: React.FC = () => {
 
     const handleResetFormData = () => {
         setFormDataGroups([
-            { platform: 'google_drive', resource_identifier: '', config: [] },
-            { platform: 'google_drive', resource_identifier: '', config: [] }
+            { platform: 'google_drive', resource_identifier: '', resource_name: '', resource_format: '', config: [] }
         ]);
-        setShowConfig([false, false]);
+        setShowConfig([false]);
+        setShowName([false]);
+        setShowFormat([false]);
         setEditingSourceId(null);
     };
 
@@ -111,12 +141,27 @@ export const Agent: React.FC = () => {
             }
         } else if (field === 'identifier') {
             updatedGroups[index].resource_identifier = value;
+        } else if (field === 'name') {
+            updatedGroups[index].resource_name = value;
+        } else if (field === 'format') {
+            updatedGroups[index].resource_format = value;
         } else if (field === 'platform') {
             updatedGroups[index].platform = value;
         }
         setFormDataGroups(updatedGroups);
     };
 
+    const toggleName = (index: number) => {
+        const updatedShow = [...showName];
+        updatedShow[index] = !updatedShow[index];
+        setShowName(updatedShow);
+    };
+
+    const toggleFormat = (index: number) => {
+        const updatedShow = [...showFormat];
+        updatedShow[index] = !updatedShow[index];
+        setShowFormat(updatedShow);
+    };
     const toggleConfig = (index: number) => {
         const updatedShow = [...showConfig];
         updatedShow[index] = !updatedShow[index];
@@ -130,22 +175,39 @@ export const Agent: React.FC = () => {
         }
     };
 
+    const handleAddGroup = () => {
+        setFormDataGroups([...formDataGroups, { platform: 'google_drive', resource_identifier: '', resource_name: '', resource_format: '', config: [] }]);
+        setShowConfig([...showConfig, false]);
+        setShowName([...showName, false]);
+        setShowFormat([...showFormat, false]);
+    };
+
+    const handleRemoveGroup = (index: number) => {
+        if (formDataGroups.length <= 1) return;
+        const updatedGroups = formDataGroups.filter((_, i) => i !== index);
+        const updatedShow = showConfig.filter((_, i) => i !== index);
+        const updatedShowName = showName.filter((_, i) => i !== index);
+        const updatedShowFormat = showFormat.filter((_, i) => i !== index);
+        setFormDataGroups(updatedGroups);
+        setShowConfig(updatedShow);
+        setShowName(updatedShowName);
+        setShowFormat(updatedShowFormat);
+    };
+
     const validateForm = () => {
         const errors: string[] = [];
         const groupsToProcess = editingSourceId ? [formDataGroups[0]] : formDataGroups;
 
         groupsToProcess.forEach((group, idx) => {
-            // Only validate if identifier is present (allow skipping the second group if empty)
-            if (group.resource_identifier || idx === 0 || editingSourceId) {
-                if (!group.resource_identifier) {
-                    errors.push(`Resource Identifier is required for Group ${idx + 1}.`);
-                }
-                if (group.platform === 'external_api' && group.resource_identifier && !group.resource_identifier.startsWith('http')) {
-                    try { new URL(group.resource_identifier); } catch (e) { errors.push(`Invalid URL in Group ${idx + 1}: ${group.resource_identifier}`); }
-                }
-                if ((group as any).configRaw) {
-                    try { JSON.parse((group as any).configRaw); } catch (e) { errors.push(`Configuration in Group ${idx + 1} must be a valid JSON array.`); }
-                }
+            if (!group.resource_identifier) {
+                errors.push(`Resource Identifier is required for Group ${idx + 1}.`);
+            }
+            if (group.platform === 'external_api' && group.resource_identifier && !group.resource_identifier.startsWith('http')) {
+                try { new URL(group.resource_identifier); } catch (e) { errors.push(`Invalid URL in Group ${idx + 1}: ${group.resource_identifier}`); }
+            }
+
+            if ((group as any).configRaw) {
+                try { JSON.parse((group as any).configRaw); } catch (e) { errors.push(`Configuration in Group ${idx + 1} must be a valid JSON array.`); }
             }
         });
 
@@ -176,22 +238,27 @@ export const Agent: React.FC = () => {
         setIsSavingDataSource(true);
         try {
             if (editingSourceId) {
-                await dataSourcesService.update(editingSourceId, {
+                const updatePayload = {
                     platform: formDataGroups[0].platform,
                     resource_identifier: formDataGroups[0].resource_identifier,
+                    resource_name: formDataGroups[0].resource_name,
+                    resource_format: formDataGroups[0].resource_format,
                     config: formDataGroups[0].config
-                });
+                };
+                console.log('Updating data source:', editingSourceId, updatePayload);
+                await dataSourcesService.update(editingSourceId, updatePayload);
                 setMessage({ type: 'success', text: 'Data source updated' });
             } else {
-                // Save all groups that have an identifier
+                console.log('Submitting data sources:', formDataGroups);
+                // Save all groups (validation ensures they are all filled)
                 const savePromises = formDataGroups
-                    .filter(group => group.resource_identifier)
                     .map(group => dataSourcesService.create({
                         ...group,
                         process_id: processId
                     }));
 
-                await Promise.all(savePromises);
+                const responses = await Promise.all(savePromises);
+                console.log('Data sources created successfully:', responses);
                 setMessage({ type: 'success', text: 'Data sources added' });
             }
             fetchDataSources(processId);
@@ -238,6 +305,8 @@ export const Agent: React.FC = () => {
         setFormDataGroups([{
             platform: source.platform,
             resource_identifier: source.resource_identifier,
+            resource_name: source.resource_name,
+            resource_format: source.resource_format,
             config: source.config || []
         }]);
         setShowConfig([!!(source.config && source.config.length > 0)]);
@@ -256,8 +325,8 @@ export const Agent: React.FC = () => {
         try {
             const res = await agentService.control(
                 action,
-                process?.user_id || undefined,
-                process?.id || undefined,
+                currentProcess?.user_id || undefined,
+                currentProcess?.id || undefined,
                 user?.email
             );
             setMessage({ type: 'success', text: res.msg });
@@ -314,17 +383,30 @@ export const Agent: React.FC = () => {
 
     return (
         <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 dark:text-gray-100">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                <div>
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                        {process ? process.name : 'FundingDetective Agent'}
-                    </h2>
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                        {process ? `Managing agent for process: ${process.name}` : 'Configure and control your AI matching agent.'}
-                    </p>
+            {/* Dashboard Headers */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+                <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 bg-primary-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/30">
+                            <Settings className="h-5 w-5 text-white" />
+                        </div>
+                        <h1 className="text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">
+                            {currentProcess?.name || 'Agent Control'}
+                        </h1>
+                    </div>
+                    <p className="text-gray-500 dark:text-gray-400 font-medium">Configure and monitor your AI process.</p>
                 </div>
+
+                {message && (
+                    <div className={`p-4 rounded-2xl border ${message.type === 'success' ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-700'} flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300`}>
+                        {message.type === 'success' ? <Check className="h-5 w-5" /> : <Info className="h-5 w-5" />}
+                        <p className="text-sm font-bold">{message.text}</p>
+                        <button onClick={() => setMessage(null)} className="ml-4 p-1 hover:bg-black/5 rounded-full"><X className="h-4 w-4" /></button>
+                    </div>
+                )}
+
                 <div className="flex items-center gap-3">
-                    {process && (
+                    {currentProcess && (
                         <button
                             onClick={() => setShowProcessDetails(!showProcessDetails)}
                             className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all shadow-sm"
@@ -345,43 +427,70 @@ export const Agent: React.FC = () => {
                         Add Datasource
                     </button>
                 </div>
+
+                <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-2 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    {agentStatus?.agent_status === 'active' ? (
+                        <button
+                            onClick={() => handleAgentControl('stop')}
+                            className="flex items-center gap-2 py-3 px-6 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg shadow-red-500/20"
+                        >
+                            <Square className="h-4 w-4 fill-current rounded-sm" /> Stop
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => handleAgentControl('start')}
+                            className="flex items-center gap-2 py-3 px-6 bg-green-500 hover:bg-green-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg shadow-green-500/20"
+                        >
+                            <Play className="h-4 w-4 fill-current" /> Start
+                        </button>
+                    )}
+                </div>
             </div>
 
-            {process && showProcessDetails && (
+            {isLoading && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 backdrop-blur-[1px]">
+                    <div className="flex flex-col items-center gap-4">
+                        <Loader2 className="h-10 w-10 text-primary-600 animate-spin" />
+                        <p className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Loading Agent Data...</p>
+                    </div>
+                </div>
+            )}
+
+            {currentProcess && showProcessDetails && (
                 <div className="mb-8 bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
                     <div className="p-6">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                             <div>
                                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Process ID</label>
-                                <p className="text-sm font-mono font-bold text-gray-700 dark:text-gray-300">#{process.id}</p>
+                                <p className="text-sm font-mono font-bold text-gray-700 dark:text-gray-300">#{currentProcess.id}</p>
                             </div>
                             <div>
                                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">User ID</label>
-                                <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{process.user_id}</p>
+                                <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{currentProcess.user_id}</p>
                             </div>
                             <div>
                                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Trigger Type</label>
-                                <p className="text-sm font-bold text-gray-700 dark:text-gray-300 capitalize">{process.trigger_type}</p>
+                                <p className="text-sm font-bold text-gray-700 dark:text-gray-300 capitalize">{currentProcess.trigger_type}</p>
                             </div>
                             <div>
                                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Status</label>
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter ${process.status === 'running' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'}`}>
-                                    {process.status}
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter ${currentProcess.status === 'running' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'}`}>
+                                    {currentProcess.status}
                                 </span>
                             </div>
                             <div>
                                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Created At</label>
-                                <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{new Date(process.created_at).toLocaleString()}</p>
+                                <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{new Date(currentProcess.created_at).toLocaleString()}</p>
                             </div>
                             <div>
                                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Updated At</label>
-                                <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{new Date(process.updated_at || process.created_at).toLocaleString()}</p>
+                                <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{new Date(currentProcess.updated_at || currentProcess.created_at).toLocaleString()}</p>
                             </div>
                         </div>
                         <div className="mt-6">
                             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Configuration Snapshot</label>
                             <pre className="mt-2 text-[10px] font-mono bg-white dark:bg-black/40 p-4 rounded-xl border border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 overflow-x-auto">
-                                {JSON.stringify(process.config_snapshot, null, 2)}
+                                {JSON.stringify(currentProcess.config_snapshot, null, 2)}
                             </pre>
                         </div>
                     </div>
@@ -543,7 +652,7 @@ export const Agent: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-900/50">
                             <tr>
-                                <th className="px-6 py-3 text-left w-10">
+                                <th className="px-6 py-4 text-left">
                                     <input
                                         type="checkbox"
                                         className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
@@ -554,15 +663,15 @@ export const Agent: React.FC = () => {
                                         checked={selectedSources.length === dataSources.length && dataSources.length > 0}
                                     />
                                 </th>
-                                <th className="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Platform</th>
-                                <th className="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Resource Identifier</th>
-                                <th className="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Config</th>
-                                <th className="px-6 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Platform</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Resource / Name</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Format</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                             {dataSources.map((source) => (
-                                <tr key={source.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                <tr key={source.id} className={`${selectedSources.includes(source.id) ? 'bg-primary-50/30 dark:bg-primary-900/10' : ''} hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors`}>
                                     <td className="px-6 py-4">
                                         <input
                                             type="checkbox"
@@ -576,9 +685,14 @@ export const Agent: React.FC = () => {
                                             {source.platform.replace('_', ' ')}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-sm font-medium dark:text-gray-300 truncate max-w-xs">{source.resource_identifier}</td>
-                                    <td className="px-6 py-4 text-xs font-mono text-gray-500 dark:text-gray-400">
-                                        {source.config ? JSON.stringify(source.config).substring(0, 30) + '...' : '-'}
+                                    <td className="px-6 py-4">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold dark:text-gray-200 truncate max-w-xs">{source.resource_name || 'Unnamed Resource'}</span>
+                                            <span className="text-[10px] text-gray-500 font-mono">{source.resource_identifier}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500">{source.resource_format || '-'}</span>
                                     </td>
                                     <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
                                         <button onClick={() => handleEditSource(source)} className="text-gray-400 hover:text-primary-500 p-1"><Edit className="h-4 w-4" /></button>
@@ -618,21 +732,59 @@ export const Agent: React.FC = () => {
                                 </div>
 
                                 <div className="p-6 flex-1 overflow-y-auto space-y-10">
+                                    {message && (
+                                        <div className={`p-4 rounded-2xl border ${message.type === 'success' ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-700'} flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300 mb-6`}>
+                                            {message.type === 'success' ? <Check className="h-5 w-5" /> : <Info className="h-5 w-5" />}
+                                            <p className="text-sm font-bold">{message.text}</p>
+                                            <button onClick={() => setMessage(null)} className="ml-auto p-1 hover:bg-black/5 rounded-full"><X className="h-4 w-4" /></button>
+                                        </div>
+                                    )}
                                     {(editingSourceId ? [formDataGroups[0]] : formDataGroups).map((group, idx) => (
                                         <div key={idx} className="space-y-6">
                                             <div className="flex justify-between items-center">
-                                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                    {editingSourceId ? 'Configuration' : `Group ${idx + 1}`}
-                                                </h3>
-                                                {!showConfig[idx] && (
-                                                    <button
-                                                        onClick={() => toggleConfig(idx)}
-                                                        className="flex items-center gap-1.5 text-[10px] font-black text-primary-600 uppercase tracking-widest hover:text-primary-700"
-                                                    >
-                                                        <PlusCircle className="h-4 w-4" />
-                                                        Add Config
-                                                    </button>
-                                                )}
+                                                <div className="flex items-center gap-3">
+                                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                        {editingSourceId ? 'Configuration' : `Group ${idx + 1}`}
+                                                    </h3>
+                                                    {!editingSourceId && formDataGroups.length > 2 && (
+                                                        <button
+                                                            onClick={() => handleRemoveGroup(idx)}
+                                                            className="text-red-500 hover:text-red-600 transition-colors p-1"
+                                                            title="Remove Group"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    {!showConfig[idx] && (
+                                                        <button
+                                                            onClick={() => toggleConfig(idx)}
+                                                            className="flex items-center gap-1.5 text-[10px] font-black text-primary-600 uppercase tracking-widest hover:text-primary-700"
+                                                        >
+                                                            <PlusCircle className="h-4 w-4" />
+                                                            Add Config
+                                                        </button>
+                                                    )}
+                                                    {!showName[idx] && (
+                                                        <button
+                                                            onClick={() => toggleName(idx)}
+                                                            className="flex items-center gap-1.5 text-[10px] font-black text-primary-600 uppercase tracking-widest hover:text-primary-700 transition-colors"
+                                                        >
+                                                            <PlusCircle className="h-4 w-4" />
+                                                            Add Name
+                                                        </button>
+                                                    )}
+                                                    {!showFormat[idx] && (
+                                                        <button
+                                                            onClick={() => toggleFormat(idx)}
+                                                            className="flex items-center gap-1.5 text-[10px] font-black text-primary-600 uppercase tracking-widest hover:text-primary-700 transition-colors"
+                                                        >
+                                                            <PlusCircle className="h-4 w-4" />
+                                                            Add Format
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             <div className="p-5 rounded-3xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 space-y-5">
@@ -649,16 +801,53 @@ export const Agent: React.FC = () => {
                                                     </select>
                                                 </div>
 
-                                                <div>
-                                                    <label className="block text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2">Resource Identifier</label>
-                                                    <input
-                                                        type="text"
-                                                        value={group.resource_identifier}
-                                                        onChange={(e) => handleDataSourceFieldChange(idx, 'identifier', e.target.value)}
-                                                        placeholder={group.platform === 'external_api' ? 'https://api.example.com/v1' : 'folder-id-or-path'}
-                                                        className="block w-full px-4 py-3 rounded-xl border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-medium dark:text-white border focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
-                                                    />
+                                                <div className={showName[idx] ? "grid grid-cols-2 gap-4" : "w-full"}>
+                                                    <div>
+                                                        <label className="block text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2">Resource Identifier <span className="text-red-500">*</span></label>
+                                                        <input
+                                                            type="text"
+                                                            value={group.resource_identifier}
+                                                            onChange={(e) => handleDataSourceFieldChange(idx, 'identifier', e.target.value)}
+                                                            placeholder={group.platform === 'external_api' ? 'https://api.example.com/v1' : 'folder-id-or-path'}
+                                                            className="block w-full px-4 py-3 rounded-xl border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-medium dark:text-white border focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                                                        />
+                                                    </div>
+                                                    {showName[idx] && (
+                                                        <div>
+                                                            <div className="flex justify-between items-center mb-2">
+                                                                <label className="block text-[8px] font-black text-gray-400 uppercase tracking-widest">Name</label>
+                                                                <button onClick={() => toggleName(idx)} className="text-red-500 hover:text-red-600 transition-colors">
+                                                                    <Trash2 className="h-3 w-3" />
+                                                                </button>
+                                                            </div>
+                                                            <input
+                                                                type="text"
+                                                                value={group.resource_name || ''}
+                                                                onChange={(e) => handleDataSourceFieldChange(idx, 'name', e.target.value)}
+                                                                placeholder="e.g. My Document"
+                                                                className="block w-full px-4 py-3 rounded-xl border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-medium dark:text-white border focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
+                                                            />
+                                                        </div>
+                                                    )}
                                                 </div>
+
+                                                {showFormat[idx] && (
+                                                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <label className="block text-[8px] font-black text-gray-400 uppercase tracking-widest">Format</label>
+                                                            <button onClick={() => toggleFormat(idx)} className="text-red-500 hover:text-red-600 transition-colors">
+                                                                <Trash2 className="h-3 w-3" />
+                                                            </button>
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            value={group.resource_format || ''}
+                                                            onChange={(e) => handleDataSourceFieldChange(idx, 'format', e.target.value)}
+                                                            placeholder="e.g. application/pdf"
+                                                            className="block w-full px-4 py-3 rounded-xl border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-medium dark:text-white border focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
+                                                        />
+                                                    </div>
+                                                )}
 
                                                 {showConfig[idx] && (
                                                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">
@@ -683,6 +872,16 @@ export const Agent: React.FC = () => {
                                             </div>
                                         </div>
                                     ))}
+
+                                    {!editingSourceId && (
+                                        <button
+                                            onClick={handleAddGroup}
+                                            className="w-full py-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-3xl flex items-center justify-center gap-2 text-gray-400 hover:text-primary-500 hover:border-primary-500 transition-all font-black text-[10px] uppercase tracking-widest"
+                                        >
+                                            <Plus className="h-5 w-5" />
+                                            Add Group
+                                        </button>
+                                    )}
                                 </div>
 
                                 <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">

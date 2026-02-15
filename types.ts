@@ -174,6 +174,8 @@ export interface DataSource {
   process_id: string; // Changed to string
   platform: 'google_drive' | 'sharepoint' | 'external_api';
   resource_identifier: string;
+  resource_name?: string;
+  resource_format?: string;
   config?: any[]; // Default structure is a list of objects
   created_at: string;
   updated_at: string;
@@ -183,5 +185,7 @@ export interface DataSourceCreateRequest {
   process_id?: string;
   platform: 'google_drive' | 'sharepoint' | 'external_api';
   resource_identifier: string;
+  resource_name?: string;
+  resource_format?: string;
   config: any[];
 }

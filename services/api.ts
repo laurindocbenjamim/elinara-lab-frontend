@@ -543,7 +543,7 @@ export const dataSourcesService = {
     const url = processId ? `/datasources?process_id=${processId}` : '/datasources';
     return agentApiClient.get(url);
   },
-  create: async (data: DataSourceCreateRequest): Promise<{ msg: string; id: string }> => {
+  create: async (data: DataSourceCreateRequest): Promise<{ msg: string; datasource: DataSource }> => {
     return agentApiClient.post('/datasources', data);
   },
   get: async (id: string): Promise<DataSource> => {
