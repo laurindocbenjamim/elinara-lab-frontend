@@ -543,7 +543,7 @@ export const dataSourcesService = {
     const url = processId ? `/datasources?process_id=${processId}` : '/datasources';
     return agentApiClient.get(url);
   },
-  create: async (data: DataSourceCreateRequest): Promise<{ msg: string; datasource: DataSource }> => {
+  create: async (data: DataSourceCreateRequest | DataSourceCreateRequest[]): Promise<{ msg: string; datasource?: DataSource; datasources?: DataSource[] }> => {
     return agentApiClient.post('/datasources', data);
   },
   get: async (id: string): Promise<DataSource> => {
@@ -554,5 +554,8 @@ export const dataSourcesService = {
   },
   delete: async (id: string): Promise<{ msg: string }> => {
     return agentApiClient.delete(`/datasources/${id}`);
+  },
+  deleteBulk: async (ids: string[]): Promise<{ msg: string }> => {
+    return agentApiClient.delete('/datasources', { data: { ids } });
   }
 };

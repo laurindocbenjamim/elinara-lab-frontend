@@ -237,29 +237,43 @@ export const Agent: React.FC = () => {
 
         setIsSavingDataSource(true);
         try {
+            const metadata = {
+                user_id: currentProcess?.user_id || user?.id,
+                agent_id: processId,
+                agent_name: currentProcess?.name || 'Unknown Agent'
+            };
+
             if (editingSourceId) {
                 const updatePayload = {
+                    ...metadata,
                     platform: formDataGroups[0].platform,
                     resource_identifier: formDataGroups[0].resource_identifier,
                     resource_name: formDataGroups[0].resource_name,
                     resource_format: formDataGroups[0].resource_format,
-                    config: formDataGroups[0].config
+                    config: formDataGroups[0].config,
+                    process_id: processId
                 };
                 console.log('Updating data source:', editingSourceId, updatePayload);
-                await dataSourcesService.update(editingSourceId, updatePayload);
-                setMessage({ type: 'success', text: 'Data source updated' });
+                const response = await dataSourcesService.update(editingSourceId, updatePayload);
+                console.log('Data source updated:', response);
+                setMessage({ type: 'success', text: response.msg || 'Data source updated' });
             } else {
-                console.log('Submitting data sources:', formDataGroups);
-                // Save all groups (validation ensures they are all filled)
-                const savePromises = formDataGroups
-                    .map(group => dataSourcesService.create({
-                        ...group,
-                        process_id: processId
-                    }));
+                const savePayloads = formDataGroups.map(group => ({
+                    ...group,
+                    ...metadata,
+                    process_id: processId
+                }));
+                console.log('Submitting data sources (bulk):', savePayloads);
 
-                const responses = await Promise.all(savePromises);
-                console.log('Data sources created successfully:', responses);
-                setMessage({ type: 'success', text: 'Data sources added' });
+                // Use bulk create if more than one group, or single create (service supports both)
+                const response = await dataSourcesService.create(savePayloads);
+                console.log('Data sources creation response:', response);
+
+                const count = response.datasources?.length || (response.datasource ? 1 : 0);
+                setMessage({
+                    type: 'success',
+                    text: response.msg || (count > 1 ? `${count} data sources added` : 'Data source added')
+                });
             }
             fetchDataSources(processId);
             setShowDataSourceModal(false);
@@ -274,9 +288,9 @@ export const Agent: React.FC = () => {
     const handleDeleteDataSource = async (id: string) => {
         if (!window.confirm('Are you sure you want to delete this data source?')) return;
         try {
-            await dataSourcesService.delete(id);
+            const response = await dataSourcesService.delete(id);
             setDataSources(dataSources.filter((s: DataSource) => s.id !== id));
-            setMessage({ type: 'success', text: 'Data source deleted' });
+            setMessage({ type: 'success', text: response.msg || 'Data source deleted' });
         } catch (err: any) {
             setMessage({ type: 'error', text: err.message || 'Failed to delete data source' });
         }
@@ -285,16 +299,10 @@ export const Agent: React.FC = () => {
     const handleBulkDelete = async () => {
         if (selectedSources.length === 0 || !window.confirm(`Delete ${selectedSources.length} sources?`)) return;
         try {
-            // Since bulkDelete was removed from service, we delete one by one or implement it in backend later.
-            // For now, let's keep it simple and assume the user wants single deletes or update backend.
-            // Actually, I removed bulkDelete from service because the new structure didn't specify it.
-            // I'll implement sequential delete for now.
-            for (const id of selectedSources) {
-                await dataSourcesService.delete(id);
-            }
+            const response = await dataSourcesService.deleteBulk(selectedSources);
             setDataSources(dataSources.filter((s: DataSource) => !selectedSources.includes(s.id)));
             setSelectedSources([]);
-            setMessage({ type: 'success', text: 'Data sources deleted' });
+            setMessage({ type: 'success', text: response.msg || 'Data sources deleted' });
         } catch (err: any) {
             setMessage({ type: 'error', text: err.message || 'Failed to delete data sources' });
         }
@@ -332,6 +340,7 @@ export const Agent: React.FC = () => {
             setMessage({ type: 'success', text: res.msg });
             fetchAgentData();
         } catch (err: any) {
+            console.error('liconsulting_agent - Agent control error:', err);
             setMessage({ type: 'error', text: err.message || 'Failed to control agent' });
         }
     };
@@ -648,7 +657,7 @@ export const Agent: React.FC = () => {
                         </button>
                     )}
                 </div>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-900/50">
                             <tr>

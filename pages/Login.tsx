@@ -38,7 +38,7 @@ export const Login: React.FC = () => {
     try {
       const response = await authService.login(formData);
       if (response.success || response.access_token || response.status_code === 200) {
-        await login(response.access_token || '');
+        await login();
         navigate('/dashboard');
       } else {
         setError('Login failed. Please check your credentials.');

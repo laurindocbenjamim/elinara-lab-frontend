@@ -177,6 +177,9 @@ export interface DataSource {
   resource_name?: string;
   resource_format?: string;
   config?: any[]; // Default structure is a list of objects
+  user_id?: number;
+  agent_id?: string;
+  agent_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -188,4 +191,7 @@ export interface DataSourceCreateRequest {
   resource_name?: string;
   resource_format?: string;
   config: any[];
+  user_id?: number;
+  agent_id?: string;
+  agent_name?: string;
 }

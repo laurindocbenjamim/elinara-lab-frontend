@@ -8,7 +8,7 @@ interface AuthContextType {
   status: AuthStatus;
   logout: () => void;
   checkAuth: () => Promise<void>;
-  login: (token: string) => Promise<void>;
+  login: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,16 +39,13 @@ export const AuthProvider = ({ children }: { children?: ReactNode }) => {
     }
   };
 
-  const login = async (token: string) => {
-    if (token) {
-      localStorage.setItem('token', token);
-    }
+  const login = async () => {
+    // Backend handles session via HttpOnly cookies, so we don't store token in localStorage
     await checkAuth();
   };
 
   const logout = async () => {
-    // Clear local state immediately for better UX
-    localStorage.removeItem('token');
+    // Clear user state
     setUser(null);
     setStatus(AuthStatus.UNAUTHENTICATED);
 
