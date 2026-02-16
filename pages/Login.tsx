@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Mail, Github } from 'lucide-react';
+import { Lock, Mail } from 'lucide-react';
 
 // Declare Google type for TypeScript
 declare global {
@@ -55,10 +55,6 @@ export const Login: React.FC = () => {
   const handleGoogleLogin = () => {
     authService.googleLogin();
   };
-  // GitHub OAuth handler - redirects to backend
-  const handleGithubLogin = () => {
-    authService.githubLogin();
-  };
 
   return (
     <div className="min-h-[100vh] flex items-center justify-center bg-[#050505] py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -68,14 +64,8 @@ export const Login: React.FC = () => {
       <div className="max-w-md w-full space-y-8 animate-fade-in relative z-10">
         {/* Glass morphism card */}
         <div className="rounded-2xl p-8 border border-white/10 shadow-2xl backdrop-blur-xl bg-[rgba(10,10,12,0.6)]">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-white/10 border border-white/10 mb-4">
-              <Lock className="h-6 w-6 text-white" />
-            </div>
-            <h2 className="text-3xl font-bold text-white">Welcome Back</h2>
-            <p className="mt-2 text-sm text-zinc-400">
-              Sign in to access your dashboard
-            </p>
+          <div className="text-center -mb-3">
+            <h2 className="text-4xl font-bold tracking-tighter bg-gradient-to-br from-white to-zinc-500 bg-clip-text text-transparent">Elinara Labs</h2>
           </div>
 
           <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
@@ -123,15 +113,15 @@ export const Login: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-lg text-black bg-white hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-white/20 disabled:opacity-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              className="w-full flex justify-center py-4 px-4 border border-transparent text-sm font-bold rounded-lg text-black bg-white hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-white/20 disabled:opacity-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 uppercase tracking-wider"
             >
               {loading ? (
                 <span className="flex items-center gap-2">
                   <div className="animate-spin h-4 w-4 border-2 border-black/20 border-t-black rounded-full"></div>
-                  Signing in...
+                  INITIALIZING...
                 </span>
               ) : (
-                'Sign in'
+                'TOUCH THE FUTURE'
               )}
             </button>
           </form>
@@ -161,15 +151,6 @@ export const Login: React.FC = () => {
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               </svg>
               <span>Google</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleGithubLogin}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 border border-white/10 rounded-lg bg-white/5 hover:bg-white/10 text-white text-sm font-medium transition-all duration-300"
-            >
-              <Github className="h-5 w-5" />
-              <span>GitHub</span>
             </button>
 
             <button

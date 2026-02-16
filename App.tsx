@@ -16,7 +16,6 @@ import { CrossReference } from './pages/CrossReference';
 import { AgentTasks } from './pages/AgentTasks';
 import { Agent } from './pages/Agent';
 import { Profile } from './pages/Profile';
-import { Billing } from './pages/Billing';
 import { SocketProvider } from './context/SocketContext';
 import { AuthStatus } from './types';
 
@@ -80,14 +79,6 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <Profile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="billing"
-          element={
-            <ProtectedRoute>
-              <Billing />
             </ProtectedRoute>
           }
         />

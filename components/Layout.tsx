@@ -18,7 +18,7 @@ export const Layout: React.FC = () => {
 
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-200 ${(isAuthPage || isStandalonePage || isAppPage) ? 'bg-[#050505]' : 'bg-gray-50 dark:bg-gray-900'} ${isAppPage ? 'auth-app-shell' : ''}`}>
-      {!isStandalonePage && <Navbar />}
+      {(!isStandalonePage && !isAuthPage) && <Navbar />}
       <div className="flex flex-1">
         {isAuthenticated && !isAuthPage && !isStandalonePage && <Sidebar />}
         <main className={`flex-grow ${(isAuthenticated && !isAuthPage && !isStandalonePage) ? 'p-4 lg:p-8' : ''} ${isAppPage ? 'auth-app-main' : ''}`}>

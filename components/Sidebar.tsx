@@ -20,7 +20,6 @@ export const Sidebar: React.FC = () => {
         { name: 'FundingDetective', icon: BrainCircuit, path: '/agent' },
         { name: 'Agent Tasks', icon: ListTodo, path: '/agent-tasks' },
         { name: 'Cloud Files', icon: HardDrive, path: '/drive' },
-        { name: 'Billing', icon: CreditCard, path: '/billing' },
         { name: 'Settings', icon: Settings, path: '/profile' },
     ];
 

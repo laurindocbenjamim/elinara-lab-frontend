@@ -30,8 +30,10 @@
 
 .auth-app-main {
   color: #ffffff;
+  font-family: 'Inter', sans-serif;
 }
 
+/* Force Dark Backgrounds on common Tailwind classes */
 .auth-app-main .bg-white,
 .auth-app-main .bg-gray-50,
 .auth-app-main .bg-gray-100,
@@ -76,6 +78,14 @@
 .auth-app-main .dark\:text-gray-400,
 .auth-app-main .dark\:text-gray-300 {
   color: #a1a1aa !important;
+}
+
+.auth-app-main input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.auth-app-main textarea,
+.auth-app-main select,
+.auth-app-main button,
+.auth-app-main table {
+  font-family: inherit;
 }
 
 .auth-app-main input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),

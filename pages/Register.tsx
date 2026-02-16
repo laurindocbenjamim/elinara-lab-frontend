@@ -3,8 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/api'; // Use authService for public registration
 import { RegisterRequest } from '../types';
-import { countries } from '../data/countries';
-import { User as UserIcon, Mail, Lock, Phone, Globe, CheckCircle, ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { User as UserIcon, Mail, Lock, CheckCircle, Eye, EyeOff } from 'lucide-react';
 
 export const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -34,16 +33,6 @@ export const Register: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedCountryName = e.target.value;
-    const country = countries.find(c => c.name === selectedCountryName);
-    setFormData({
-      ...formData,
-      countryName: selectedCountryName,
-      countryTelCode: country ? country.dial_code : formData.countryTelCode
-    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,9 +86,6 @@ export const Register: React.FC = () => {
               <UserIcon className="h-6 w-6 text-white" />
             </div>
             <h2 className="text-3xl font-bold text-white">Create Account</h2>
-            <p className="mt-2 text-sm text-zinc-400">
-              Join our engineering community
-            </p>
           </div>
 
           {error && (
@@ -176,65 +162,6 @@ export const Register: React.FC = () => {
               >
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
-            </div>
-
-            {/* Location Fields: Country & Code */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Globe className="h-5 w-5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
-                </div>
-                <select
-                  name="countryName"
-                  id="countryName"
-                  required
-                  value={formData.countryName}
-                  onChange={handleCountryChange}
-                  className="w-full pl-12 pr-10 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all duration-300 appearance-none"
-                >
-                  <option value="" disabled className="text-gray-900">Select Country</option>
-                  {countries.map((c) => (
-                    <option key={c.code} value={c.name} className="text-gray-900">
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                  <ChevronDown className="h-4 w-4 text-zinc-500" />
-                </div>
-              </div>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Globe className="h-5 w-5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
-                </div>
-                <input
-                  type="text"
-                  name="countryTelCode"
-                  id="countryTelCode"
-                  required
-                  placeholder="Code (+351)"
-                  value={formData.countryTelCode}
-                  onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all duration-300"
-                />
-              </div>
-            </div>
-
-            {/* Phone Number */}
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Phone className="h-5 w-5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
-              </div>
-              <input
-                type="tel"
-                name="phoneNumber"
-                id="phoneNumber"
-                required
-                placeholder="Phone number"
-                value={formData.phoneNumber}
-                onChange={handleChange}
-                className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all duration-300"
-              />
             </div>
 
             {/* Sign Up Button */}
