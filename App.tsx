@@ -11,7 +11,6 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { GoogleDrive } from './pages/GoogleDrive';
 import { OneDrive } from './pages/OneDrive';
 import { FileProperties } from './pages/FileProperties';
-
 import { CrossReference } from './pages/CrossReference';
 import { AgentTasks } from './pages/AgentTasks';
 import { Agent } from './pages/Agent';
@@ -86,7 +85,7 @@ const AppRoutes = () => {
           path="drive"
           element={
             <ProtectedRoute>
-              <GoogleDrive />
+               <GoogleDrive />
             </ProtectedRoute>
           }
         />

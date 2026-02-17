@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, Play, Square, Pause, Plus, List } from 'lucide-react';
+import { Settings, Play, Square, Pause, Plus, List, Trash2 } from 'lucide-react';
 import { agentService, configService } from '../services/api';
 import { AgentStatus } from '../types';
 import { useAuth } from '../context/AuthContext';

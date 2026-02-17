@@ -21,10 +21,8 @@ export const Layout: React.FC = () => {
       {(!isStandalonePage && !isAuthPage) && <Navbar />}
       <div className="flex flex-1">
         {isAuthenticated && !isAuthPage && !isStandalonePage && <Sidebar />}
-        <main className={`flex-grow ${(isAuthenticated && !isAuthPage && !isStandalonePage) ? 'p-4 lg:p-8' : ''} ${isAppPage ? 'auth-app-main' : ''}`}>
-          <div className={(isAuthenticated && !isAuthPage && !isStandalonePage) ? 'max-w-7xl mx-auto' : ''}>
-            <Outlet />
-          </div>
+        <main className={`flex-grow ${isAppPage ? 'auth-app-main' : ''}`}>
+          <Outlet />
         </main>
       </div>
       {(!isAuthPage && !isStandalonePage) && (

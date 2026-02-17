@@ -7,13 +7,17 @@ import {
     HardDrive,
     CreditCard,
     Settings,
-    ChevronRight
+    ChevronRight,
+    Orbit
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Sidebar: React.FC = () => {
     const location = useLocation();
     const { user } = useAuth();
+
+    const fullName = `${user?.firstname || ''} ${user?.lastname || ''}`.trim() || user?.username || 'User';
+    const companyName = user?.username || 'Workspace';
 
     const menuItems = [
         { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
@@ -31,12 +35,12 @@ export const Sidebar: React.FC = () => {
         <aside className="w-64 bg-[rgba(10,10,12,0.82)] backdrop-blur-xl border-r border-white/10 hidden lg:flex flex-col sticky top-16 h-[calc(100vh-4rem)] transition-colors duration-200 overflow-y-auto">
             <div className="p-6">
                 <div className="flex items-center gap-3 mb-8">
-                    <div className="h-10 w-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-white shadow-lg">
-                        <BrainCircuit className="h-6 w-6" />
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+                        <Orbit className="h-6 w-6 animate-[spin_10s_linear_infinite]" />
                     </div>
-                    <div>
-                        <h2 className="text-sm font-bold text-white leading-tight">Elite SaaS</h2>
-                        <p className="text-xs text-zinc-400">Workspace</p>
+                    <div className="min-w-0">
+                        <h2 className="text-sm font-bold text-white leading-tight truncate uppercase tracking-tighter">{fullName}</h2>
+                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest truncate">{companyName}</p>
                     </div>
                 </div>
 

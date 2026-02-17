@@ -433,6 +433,27 @@
   to { transform: rotate(360deg); }
 }
 
+/* Fix for browser autofill rectangles */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px #050505 inset !important;
+    -webkit-text-fill-color: white !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Ensure inputs in profile/dashboard are truly transparent */
+.clean-input {
+    background-color: transparent !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+}
+
 @media (max-width: 1100px) {
   .dash-grid {
     grid-template-columns: 1fr;
