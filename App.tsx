@@ -14,6 +14,7 @@ import { FileProperties } from './pages/FileProperties';
 import { CrossReference } from './pages/CrossReference';
 import { AgentTasks } from './pages/AgentTasks';
 import { Agent } from './pages/Agent';
+import { AgentSettingsPage } from './pages/AgentSettingsPage';
 import { AgentActions } from './pages/AgentActions';
 import { Profile } from './pages/Profile';
 import { Billing } from './pages/Billing';
@@ -64,6 +65,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <Agent />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="agent/:processId/settings"
+          element={
+            <ProtectedRoute>
+              <AgentSettingsPage />
             </ProtectedRoute>
           }
         />

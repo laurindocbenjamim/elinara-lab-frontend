@@ -15,7 +15,9 @@ import {
   Process,
   ProcessCreateRequest,
   DataSource,
-  DataSourceCreateRequest
+  DataSourceCreateRequest,
+  AgentControlRequest,
+  AgentControlResponse
 } from '../types';
 import { config } from '../config';
 
@@ -49,9 +51,6 @@ const getCookie = (name: string): string | null => {
   if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
   return null;
 };
-
-// Cache para evitar múltiplas verificacje
-let csrfTokenValidated = false;
 
 // Verificar se método precisa de CSRF
 const requiresCsrfToken = (method?: string): boolean => {
@@ -185,7 +184,6 @@ apiClient.interceptors.response.use(
         console.warn('Sessão expirada ou inválida');
 
         // Limpar qualquer estado de CSRF
-        csrfTokenValidated = false;
 
         // Check if this is a disconnect request - avoid kicking to login if it fails
         if (originalRequest?.url?.includes('/disconnect')) {
@@ -280,7 +278,6 @@ export const authService = {
       return response;
     } finally {
       // Limpar estado de CSRF após logout
-      csrfTokenValidated = false;
     }
   },
 
@@ -307,7 +304,6 @@ export const authService = {
 
   googleLogout: async (): Promise<GenericResponse> => {
     const response = await apiClient.get<any, GenericResponse>('/auth2/google/logout');
-    csrfTokenValidated = false;
     return response;
   },
 
@@ -321,7 +317,6 @@ export const authService = {
 
   githubLogout: async (): Promise<GenericResponse> => {
     const response = await apiClient.post<any, GenericResponse>('/auth2/github/logout');
-    csrfTokenValidated = false;
     return response;
   },
 
@@ -470,8 +465,8 @@ export const agentService = {
     return agentApiClient.get('/agent/status');
   },
 
-  control: async (action: 'start' | 'stop' | 'pause', user_id?: number, process_id?: number, email?: string): Promise<{ msg: string; status: string }> => {
-    return agentApiClient.post('/agent/control', { action, user_id, process_id, email });
+  control: async (params: AgentControlRequest): Promise<AgentControlResponse> => {
+    return agentApiClient.post('/agent/control', params);
   },
 
   updateConfig: async (model: string): Promise<{ msg: string; selected_model: string }> => {
@@ -493,6 +488,15 @@ export const agentService = {
 
 // Configuration Service
 export const configService = {
+  get: async (): Promise<import('../types').AgentSettings> => {
+    return agentApiClient.get('/config/update');
+  },
+
+  update: async (data: Partial<import('../types').AgentSettings>): Promise<import('../types').AgentSettings> => {
+    return agentApiClient.post('/config/update', data);
+  },
+
+  // Legacy support for emails if still needed elsewhere
   getConnectionEmails: async (): Promise<{ connection_emails: string[] }> => {
     return agentApiClient.get('/config/connection-emails');
   },

@@ -110,8 +110,31 @@ export interface AgentStatus {
   id?: number;
 }
 
+export interface AgentSettings {
+  id: number;
+  user_id: number | string;
+  agent_status: 'active' | 'stopped' | 'paused';
+  agent_id: string;
+  execution_mode: 'manual' | 'scheduled' | 'interval';
+  alert_emails: string[];
+  execution_interval?: number;
+  scheduled_time?: string;
+  llm_model: string;
+}
+
 export interface AgentControlRequest {
   action: 'start' | 'stop' | 'pause';
+  user_id?: number | string;
+  email?: string;
+  agent_id?: string;
+  execution_mode?: 'manual' | 'scheduled' | 'interval';
+  execution_interval?: number;
+  scheduled_time?: string;
+}
+
+export interface AgentControlResponse {
+  msg: string;
+  agent_settings: AgentSettings;
 }
 
 export interface AgentConfigRequest {

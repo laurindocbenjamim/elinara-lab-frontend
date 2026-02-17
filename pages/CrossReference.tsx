@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Sparkles, File as FileIcon, X, BrainCircuit, Mic, Save, CheckCircle, AlertCircle } from 'lucide-react';
 import { DriveFile } from '../types';
 import { cloudFilesService } from '../services/api';
+import { AgentSelectModal } from '../components/AgentSelectModal';
 
 export const CrossReference: React.FC = () => {
     const navigate = useNavigate();
@@ -37,6 +38,7 @@ export const CrossReference: React.FC = () => {
     const [viewMode, setViewMode] = useState<'selection' | 'crossing'>('selection');
     const [crossingFiles, setCrossingFiles] = useState<Array<{ id: string; name: string; provider: string }>>([]);
     const [loadingCrossing, setLoadingCrossing] = useState(false);
+    const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
 
     const removeFile = (id: string) => {
         setSelectedFiles(selectedFiles.filter(f => f.id !== id));
@@ -365,6 +367,7 @@ export const CrossReference: React.FC = () => {
                                 </div>
 
                                 <button
+                                    onClick={() => setIsAgentModalOpen(true)}
                                     disabled={selectedFiles.length === 0 || isProcessing}
                                     className={`w-full py-4 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 ${selectedFiles.length === 0
                                         ? 'bg-white/10 text-white/50 cursor-not-allowed'
@@ -379,6 +382,17 @@ export const CrossReference: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            <AgentSelectModal
+                isOpen={isAgentModalOpen}
+                onClose={() => setIsAgentModalOpen(false)}
+                filesData={selectedFiles.map(f => ({
+                    id: f.id,
+                    name: f.name,
+                    type: f.mimeType || 'unknown',
+                    provider: 'google'
+                }))}
+            />
         </div>
     );
 };

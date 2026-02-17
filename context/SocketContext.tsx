@@ -24,11 +24,13 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
     useEffect(() => {
         // Use standard /socket.io path unless a specific proxy setup is known
-        const socketInstance = io(config.AGENT_BASE_URL, {
-            path: '/socket.io',
+        const socketInstance = io(config.SOCKET_URL, {
+            path: '/api/socket.io',
             withCredentials: true,
             transports: ['polling', 'websocket'],
             autoConnect: true,
+            reconnection: true,
+            reconnectionAttempts: 5,
         });
 
         socketInstance.on('connect', () => {
