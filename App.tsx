@@ -18,6 +18,7 @@ import { AgentSettingsPage } from './pages/AgentSettingsPage';
 import { AgentActions } from './pages/AgentActions';
 import { Profile } from './pages/Profile';
 import { Billing } from './pages/Billing';
+import { DataSources } from './pages/DataSources';
 import { SocketProvider } from './context/SocketContext';
 import { AuthStatus } from './types';
 
@@ -105,6 +106,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <Billing />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="datasources"
+          element={
+            <ProtectedRoute>
+              <DataSources />
             </ProtectedRoute>
           }
         />

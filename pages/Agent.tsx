@@ -22,23 +22,27 @@ import {
     Plus,
     Trash,
     ListTodo,
-    Link as LinkIcon
+    Link as LinkIcon,
+    AlertTriangle
 } from 'lucide-react';
 import { agentService, processesService, dataSourcesService, configService } from '../services/api';
 import { AgentStatus, Process, DataSource, DataSourceCreateRequest } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { useParams, useLocation, Link } from 'react-router-dom';
+import { useParams, useLocation, Link, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
+import { DeleteAgentModal } from '../components/DeleteAgentModal';
+import { emitEvent, EVENTS } from '../services/events';
 
 
 export const Agent: React.FC = () => {
     const { processId } = useParams<{ processId: string }>();
+    const navigate = useNavigate();
     const location = useLocation();
     const { user } = useAuth();
     const { socket, isConnected } = useSocket();
 
     // UI State
-    const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
+    const [agentLiveStatus, setAgentLiveStatus] = useState<AgentStatus | null>(null);
     const [currentProcess, setCurrentProcess] = useState<Process | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [llmModel, setLlmModel] = useState('gemini-1.5-pro');
@@ -73,11 +77,33 @@ export const Agent: React.FC = () => {
         { id: 1, time: new Date().toLocaleTimeString(), name: 'System Initialized', source: 'Orchestrator', status: 'success' }
     ]);
 
-    // Reset progress when agent changes
+    // Delete Agent State
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // Reset progress and state when agent changes (ensure "shift" feel)
     useEffect(() => {
         setJobProgress(INITIAL_JOB_PROGRESS);
+        setAgentLiveStatus(null);
+        setCurrentProcess(null);
+        setDataSources([]);
         setEvents([{ id: Date.now(), time: new Date().toLocaleTimeString(), name: 'Agent Context Switched', source: 'Orchestrator', status: 'success' }]);
     }, [processId]);
+
+    const handleDeleteAgent = async () => {
+        if (!processId) return;
+        setIsDeleting(true);
+        try {
+            await processesService.delete(parseInt(processId));
+            emitEvent(EVENTS.AGENTS_CHANGED);
+            navigate('/dashboard');
+        } catch (err: any) {
+            console.error('Failed to delete agent', err);
+            setMessage({ type: 'error', text: err.message || 'Failed to delete agent' });
+            setIsDeleting(false);
+            setIsDeleteDialogOpen(false);
+        }
+    };
 
     const DEFAULT_CONFIG = [
         {
@@ -104,17 +130,17 @@ export const Agent: React.FC = () => {
         setIsLoading(true);
         try {
             const promises: Promise<any>[] = [
-                agentService.getStatus(),
+                agentService.getStatus(processId),
                 processesService.list(),
                 processId ? processesService.get(parseInt(processId)) : Promise.resolve(null),
-                configService.get()
+                configService.get(processId)
             ];
 
-            const [agentStatus, , process, configSettings] = await Promise.all(promises);
+            const [agentStatusResult, , process, configSettings] = await Promise.all(promises);
 
-            setAgentStatus(agentStatus);
+            setAgentLiveStatus(agentStatusResult);
             // Prioritize llm_model from unified config, fallback to gemini-1.5-pro
-            setLlmModel(configSettings?.llm_model || agentStatus?.selected_model || 'gemini-1.5-pro');
+            setLlmModel(configSettings?.llm_model || agentStatusResult?.selected_model || 'gemini-1.5-pro');
 
             if (processId && process) {
                 setCurrentProcess(process);
@@ -173,7 +199,13 @@ export const Agent: React.FC = () => {
 
         const handleAgentStatus = (data: any) => {
             if (String(data.agent_id) === String(processId)) {
-                setAgentStatus(prev => prev ? { ...prev, agent_status: data.status } : null);
+                setAgentLiveStatus(prev => prev ? { ...prev, agent_status: data.status } : null);
+                setCurrentProcess(prev => prev ? {
+                    ...prev,
+                    status: data.status === 'active' ? 'running' :
+                        data.status === 'stopped' ? 'completed' :
+                            prev.status
+                } : null);
             }
         };
 
@@ -426,6 +458,8 @@ export const Agent: React.FC = () => {
         );
     };
 
+    const isAgentActive = agentLiveStatus?.agent_status === 'active' || currentProcess?.status === 'running';
+
     return (
         <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 dark:text-gray-100">
             {/* Header */}
@@ -440,10 +474,10 @@ export const Agent: React.FC = () => {
                                 {currentProcess?.name || 'Agent Control'}
                             </h1>
                             <div className="flex items-center gap-3 mt-1">
-                                <HealthBadge label="Database" icon={Database} active={true} />
-                                <HealthBadge label="Scheduler" icon={Clock} active={true} />
-                                <HealthBadge label="Triggerer" icon={Zap} active={true} />
-                                <HealthBadge label="Processor" icon={Cpu} active={agentStatus?.agent_status === 'active'} />
+                                <HealthBadge label="Database" icon={Database} active={isAgentActive} />
+                                <HealthBadge label="Scheduler" icon={Clock} active={isAgentActive} />
+                                <HealthBadge label="Triggerer" icon={Zap} active={isAgentActive} />
+                                <HealthBadge label="Processor" icon={Cpu} active={isAgentActive} />
                             </div>
                         </div>
                     </div>
@@ -472,11 +506,11 @@ export const Agent: React.FC = () => {
                     <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm ml-2">
                         <button
                             disabled={isLoading}
-                            onClick={() => handleAgentControl(agentStatus?.agent_status === 'active' ? 'stop' : 'start')}
-                            className={`flex items-center gap-1.5 py-1.5 px-4 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all shadow-md ${agentStatus?.agent_status === 'active' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' : 'bg-green-500 hover:bg-green-600 shadow-green-500/20'} text-white disabled:opacity-50`}
+                            onClick={() => handleAgentControl(isAgentActive ? 'stop' : 'start')}
+                            className={`flex items-center gap-1.5 py-1.5 px-4 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all shadow-md ${isAgentActive ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' : 'bg-green-500 hover:bg-green-600 shadow-green-500/20'} text-white disabled:opacity-50`}
                         >
-                            {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : (agentStatus?.agent_status === 'active' ? <Square className="h-3 w-3 fill-current" /> : <Play className="h-3 w-3 fill-current" />)}
-                            {agentStatus?.agent_status === 'active' ? 'Stop' : 'Start'}
+                            {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : (isAgentActive ? <Square className="h-3 w-3 fill-current" /> : <Play className="h-3 w-3 fill-current" />)}
+                            {isAgentActive ? 'Stop' : 'Start'}
                         </button>
                     </div>
                 </div>
@@ -559,8 +593,8 @@ export const Agent: React.FC = () => {
                     <div className="px-8 py-4 bg-white/5 border-t border-gray-800/50 flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-500">
                         <div className="flex items-center gap-4">
                             <span className="flex items-center gap-1.5 text-xs">
-                                <Activity className={`h-3 w-3 ${agentStatus?.agent_status === 'active' ? 'text-green-500 animate-spin-slow' : 'text-gray-600'}`} />
-                                {agentStatus?.agent_status === 'active' ? 'Agent Pipeline Active' : 'Orchestrator Standby'}
+                                <Activity className={`h-3 w-3 ${isAgentActive ? 'text-green-500 animate-spin-slow' : 'text-gray-600'}`} />
+                                {isAgentActive ? 'Agent Pipeline Active' : 'Orchestrator Standby'}
                             </span>
                         </div>
                         <span className="text-gray-600 font-mono">Build v2.4.0-stable</span>
@@ -591,6 +625,27 @@ export const Agent: React.FC = () => {
                         <Link to="/agent-tasks" className="text-[10px] font-black uppercase text-primary-600 hover:text-primary-700 tracking-widest flex items-center justify-center gap-2">
                             Full Log History <ListTodo className="h-3 w-3" />
                         </Link>
+                    </div>
+                </div>
+
+                {/* Danger Zone */}
+                <div className="md:col-span-12 bg-red-50/50 dark:bg-red-900/10 rounded-[2rem] border border-red-100 dark:border-red-900/30 overflow-hidden mt-8">
+                    <div className="p-6 border-b border-red-100/50 dark:border-red-900/20 bg-red-100/20 dark:bg-red-900/20">
+                        <h3 className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4" /> Danger Zone
+                        </h3>
+                    </div>
+                    <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div>
+                            <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">Delete this Agent</p>
+                            <p className="text-xs text-gray-400 font-medium">Once deleted, you will lose all configuration and matching history for this agent. This action is irreversible.</p>
+                        </div>
+                        <button
+                            onClick={() => setIsDeleteDialogOpen(true)}
+                            className="px-6 py-3 bg-white dark:bg-gray-800 border-2 border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-600 hover:text-white hover:border-red-600 transition-all shadow-sm"
+                        >
+                            Delete Agent
+                        </button>
                     </div>
                 </div>
             </div>
@@ -765,6 +820,17 @@ export const Agent: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {currentProcess && (
+                <DeleteAgentModal
+                    isOpen={isDeleteDialogOpen}
+                    onClose={() => setIsDeleteDialogOpen(false)}
+                    onConfirm={handleDeleteAgent}
+                    agentName={currentProcess.name}
+                    isLoading={isDeleting}
+                />
             )}
         </div>
     );

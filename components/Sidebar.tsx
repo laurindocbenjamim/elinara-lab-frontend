@@ -5,6 +5,7 @@ import {
     BrainCircuit,
     ListTodo,
     HardDrive,
+    Database,
     CreditCard,
     Settings,
     ChevronRight,
@@ -18,6 +19,9 @@ import { useAuth } from '../context/AuthContext';
 import { processesService } from '../services/api';
 import { Process } from '../types';
 
+import { config } from '../config';
+import { EVENTS } from '../services/events';
+
 export const Sidebar: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -26,6 +30,7 @@ export const Sidebar: React.FC = () => {
     const menuItems = [
         { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
         { name: 'Cloud Files', icon: HardDrive, path: '/drive' },
+        { name: 'Data Sources', icon: Database, path: '/datasources' },
         { name: 'Billing', icon: CreditCard, path: '/billing' },
         { name: 'Settings', icon: Settings, path: '/profile' },
         { name: 'Agent Actions', icon: Activity, path: '/agent-actions' },
@@ -33,6 +38,8 @@ export const Sidebar: React.FC = () => {
 
     const [processes, setProcesses] = React.useState<Process[]>([]);
     const [isCreating, setIsCreating] = React.useState(false);
+
+    const isLimitReached = processes.length >= config.MAX_AGENTS;
 
     React.useEffect(() => {
         const fetchProcesses = async () => {
@@ -43,10 +50,22 @@ export const Sidebar: React.FC = () => {
                 console.error('Failed to fetch processes', err);
             }
         };
+
         fetchProcesses();
+
+        // Listen for agent changes (e.g., deletion)
+        const handleAgentsChanged = () => {
+            fetchProcesses();
+        };
+
+        window.addEventListener(EVENTS.AGENTS_CHANGED, handleAgentsChanged);
+        return () => {
+            window.removeEventListener(EVENTS.AGENTS_CHANGED, handleAgentsChanged);
+        };
     }, []);
 
     const handleCreateAgent = async () => {
+        if (isLimitReached) return;
         setIsCreating(true);
         try {
             const newProcess = await processesService.create({
@@ -148,11 +167,11 @@ export const Sidebar: React.FC = () => {
                             </button>
                             <button
                                 onClick={handleCreateAgent}
-                                disabled={isCreating}
-                                className="p-1 hover:bg-primary-50 dark:hover:bg-primary-900/30 text-primary-600 rounded-lg transition-colors disabled:opacity-50"
-                                title="Create New Agent"
+                                disabled={isCreating || isLimitReached}
+                                className={`p-1 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${isLimitReached ? 'text-gray-400' : 'hover:bg-primary-50 dark:hover:bg-primary-900/30 text-primary-600'}`}
+                                title={isLimitReached ? `Limit of ${config.MAX_AGENTS} agents reached` : "Create New Agent"}
                             >
-                                {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 text-primary-500" />}
+                                {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                             </button>
                         </div>
                         <div className={`grid transition-all duration-300 ease-in-out ${isAgentsExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>

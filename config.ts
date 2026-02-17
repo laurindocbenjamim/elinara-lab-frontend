@@ -6,5 +6,7 @@ export const config = {
   // Base URL for the agent service (default to port 5001)
   AGENT_BASE_URL: agentBaseUrl,
   // Socket.io URL (strip trailing /api if present to avoid path conflicts)
-  SOCKET_URL: agentBaseUrl.replace(/\/api$/, '')
+  SOCKET_URL: agentBaseUrl.replace(/\/api$/, ''),
+  // Maximum number of agents allowed
+  MAX_AGENTS: parseInt(import.meta.env.VITE_NUMBER_OF_AGENTS || '2', 10)
 };

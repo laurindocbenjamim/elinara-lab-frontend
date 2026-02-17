@@ -31,7 +31,7 @@ export const AgentSettingsPage: React.FC = () => {
         setLoading(true);
         try {
             const [settings, process] = await Promise.all([
-                configService.get(),
+                configService.get(processId),
                 processesService.get(parseInt(processId!))
             ]);
 
@@ -67,7 +67,7 @@ export const AgentSettingsPage: React.FC = () => {
         setMessage(null);
 
         try {
-            await configService.update({
+            await configService.update(processId!, {
                 alert_emails: alertEmails,
                 execution_mode: executionMode,
                 execution_interval: executionMode === 'interval' ? executionInterval : undefined,

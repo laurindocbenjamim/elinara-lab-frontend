@@ -461,16 +461,17 @@ export const cloudFilesService = {
 
 // FundingDetective Agent Service
 export const agentService = {
-  getStatus: async (): Promise<AgentStatus> => {
-    return agentApiClient.get('/agent/status');
+  getStatus: async (agentId?: string): Promise<AgentStatus> => {
+    const url = agentId ? `/agent/status?agent_id=${agentId}` : '/agent/status';
+    return agentApiClient.get(url);
   },
 
   control: async (params: AgentControlRequest): Promise<AgentControlResponse> => {
     return agentApiClient.post('/agent/control', params);
   },
 
-  updateConfig: async (model: string): Promise<{ msg: string; selected_model: string }> => {
-    return agentApiClient.post('/agent/config', { model });
+  updateConfig: async (agentId: string, model: string): Promise<{ msg: string; selected_model: string }> => {
+    return agentApiClient.post('/agent/config', { agent_id: agentId, model });
   },
 
   triggerTask: async (filename: string, phone: string): Promise<AgentTaskResponse> => {
@@ -488,12 +489,13 @@ export const agentService = {
 
 // Configuration Service
 export const configService = {
-  get: async (): Promise<import('../types').AgentSettings> => {
-    return agentApiClient.get('/config/update');
+  get: async (agentId?: string): Promise<import('../types').AgentSettings> => {
+    const url = agentId ? `/config/update?agent_id=${agentId}` : '/config/update';
+    return agentApiClient.get(url);
   },
 
-  update: async (data: Partial<import('../types').AgentSettings>): Promise<import('../types').AgentSettings> => {
-    return agentApiClient.post('/config/update', data);
+  update: async (agentId: string, data: Partial<import('../types').AgentSettings>): Promise<import('../types').AgentSettings> => {
+    return agentApiClient.post('/config/update', { ...data, agent_id: agentId });
   },
 
   // Legacy support for emails if still needed elsewhere
@@ -546,6 +548,9 @@ export const dataSourcesService = {
   list: async (processId?: string): Promise<DataSource[]> => {
     const url = processId ? `/datasources?process_id=${processId}` : '/datasources';
     return agentApiClient.get(url);
+  },
+  listUser: async (): Promise<DataSource[]> => {
+    return agentApiClient.get('/user/datasources');
   },
   create: async (data: DataSourceCreateRequest | DataSourceCreateRequest[]): Promise<{ msg: string; datasource?: DataSource; datasources?: DataSource[] }> => {
     return agentApiClient.post('/datasources', data);

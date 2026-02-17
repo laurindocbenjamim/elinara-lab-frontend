@@ -4,6 +4,8 @@ import { User } from '../types';
 import { Trash, Edit2, Search, BrainCircuit } from 'lucide-react';
 import { processesService } from '../services/api';
 import { Process } from '../types';
+import { DeleteAgentModal } from '../components/DeleteAgentModal';
+import { emitEvent, EVENTS } from '../services/events';
 
 export const AdminDashboard: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -12,6 +14,10 @@ export const AdminDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
   const [processFilter, setProcessFilter] = useState('');
+
+  const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -33,7 +39,7 @@ export const AdminDashboard: React.FC = () => {
     fetchData();
   }, []);
 
-  const handleDelete = async (id: number) => {
+  const handleUserDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
         await userService.deleteUser(id);
@@ -41,6 +47,22 @@ export const AdminDashboard: React.FC = () => {
       } catch (err: any) {
         alert('Failed to delete user: ' + err.message);
       }
+    }
+  };
+
+  const handleProcessDelete = async () => {
+    if (!selectedProcess) return;
+    setIsDeleting(true);
+    try {
+      await processesService.delete(selectedProcess.id);
+      emitEvent(EVENTS.AGENTS_CHANGED);
+      setProcesses(processes.filter(p => p.id !== selectedProcess.id));
+      setIsDeleteDialogOpen(false);
+    } catch (err: any) {
+      alert('Failed to delete process: ' + err.message);
+    } finally {
+      setIsDeleting(false);
+      setSelectedProcess(null);
     }
   };
 
@@ -139,7 +161,7 @@ export const AdminDashboard: React.FC = () => {
                           <Edit2 className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => user.id && handleDelete(user.id)}
+                          onClick={() => user.id && handleUserDelete(user.id)}
                           className="text-red-600 hover:text-red-900"
                         >
                           <Trash className="h-4 w-4" />
@@ -211,8 +233,8 @@ export const AdminDashboard: React.FC = () => {
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium uppercase ${proc.status === 'running' ? 'bg-green-100 text-green-800' :
-                            proc.status === 'failed' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
+                          proc.status === 'failed' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
                           }`}>
                           {proc.status}
                         </span>
@@ -227,7 +249,10 @@ export const AdminDashboard: React.FC = () => {
                         <button className="text-primary-600 hover:text-primary-900 mr-4">
                           <Edit2 className="h-4 w-4" />
                         </button>
-                        <button className="text-red-600 hover:text-red-900">
+                        <button
+                          onClick={() => { setSelectedProcess(proc); setIsDeleteDialogOpen(true); }}
+                          className="text-red-600 hover:text-red-900"
+                        >
                           <Trash className="h-4 w-4" />
                         </button>
                       </td>
@@ -244,6 +269,16 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {selectedProcess && (
+        <DeleteAgentModal
+          isOpen={isDeleteDialogOpen}
+          onClose={() => setIsDeleteDialogOpen(false)}
+          onConfirm={handleProcessDelete}
+          agentName={selectedProcess.name}
+          isLoading={isDeleting}
+        />
+      )}
     </div>
   );
 };
