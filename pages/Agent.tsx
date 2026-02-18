@@ -188,14 +188,20 @@ export const Agent: React.FC = () => {
         fetchAgentData();
     }, [fetchAgentData]);
 
+    // Countdown State
+    const [countdown, setCountdown] = useState<{ remaining: number, next_run: string } | null>(null);
+
     // Socket.io Integration
     useEffect(() => {
         if (!socket || !isConnected || !user || !processId) return;
 
-        // Join specific agent room for granular tracking
+        // Join specific agent and user rooms for granular tracking
         const agentRoom = `agent_${processId}`;
-        console.log(`Joining room: ${agentRoom}`);
+        const userRoom = `user_${user.id}`;
+
+        console.log(`Joining rooms: ${agentRoom}, ${userRoom}`);
         socket.emit('join', { room: agentRoom });
+        socket.emit('join', { room: userRoom });
 
         const handleAgentStatus = (data: any) => {
             if (String(data.agent_id) === String(processId)) {
@@ -240,13 +246,26 @@ export const Agent: React.FC = () => {
             }
         };
 
+        const handleAgentCountdown = (data: any) => {
+            if (String(data.process_id) === String(processId) || data.process_id === 'default') {
+                console.log(`Agent ${data.process_id} countdown: ${data.remaining_seconds}s`);
+                setCountdown({
+                    remaining: data.remaining_seconds,
+                    next_run: data.next_run
+                });
+            }
+        };
+
         socket.on('agent_status', handleAgentStatus);
         socket.on('pipeline_update', handlePipelineUpdate);
+        socket.on('agent_countdown', handleAgentCountdown);
 
         return () => {
             socket.off('agent_status', handleAgentStatus);
             socket.off('pipeline_update', handlePipelineUpdate);
+            socket.off('agent_countdown', handleAgentCountdown);
             socket.emit('leave', { room: agentRoom });
+            socket.emit('leave', { room: userRoom });
         };
     }, [socket, isConnected, user, processId]);
 
@@ -576,6 +595,17 @@ export const Agent: React.FC = () => {
                                         {isConnected ? 'ONLINE' : 'OFFLINE'}
                                     </p>
                                 </div>
+                                {countdown && countdown.remaining > 0 && (
+                                    <>
+                                        <div className="h-10 w-px bg-gray-800"></div>
+                                        <div className="text-right animate-in fade-in slide-in-from-right duration-500">
+                                            <p className="text-[10px] font-black text-primary-500 uppercase">Next Run</p>
+                                            <p className="text-sm font-black text-white tabular-nums">
+                                                {Math.floor(countdown.remaining / 60)}m {countdown.remaining % 60}s
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
 

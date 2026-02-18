@@ -120,6 +120,7 @@ export interface AgentSettings {
   execution_interval?: number;
   scheduled_time?: string;
   llm_model: string;
+  llm_provider: string;
 }
 
 export interface AgentControlRequest {
