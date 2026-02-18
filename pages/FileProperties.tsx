@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, File as FileIcon, Folder, Image as ImageIcon, Music, Video, FileText, Download, Info, Calendar, HardDrive, Tag, Star, Cpu } from 'lucide-react';
-import { AgentSelectModal } from '../components/AgentSelectModal';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, File as FileIcon, Folder, Image as ImageIcon, Music, Video, FileText, Download, Share2, Info, Calendar, HardDrive, Tag, Star, Cpu } from 'lucide-react';
 import { DriveFile } from '../types';
 
 export const FileProperties: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { id } = useParams();
 
     // We try to get file from state first, but ideally we would fallback to fetching if not present
     // For now, we assume navigation comes from the Drive view with state
     const file = location.state?.file as DriveFile | undefined;
-    const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
 
     if (!file) {
         return (
@@ -157,24 +156,13 @@ export const FileProperties: React.FC = () => {
                                     )}
 
                                     <button
-                                        onClick={() => setIsAgentModalOpen(true)}
+                                        onClick={() => navigate('/drive/cross-reference', { state: { file } })}
                                         className="flex items-center justify-center gap-3 w-full p-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl hover:scale-[1.02] transition-all"
                                     >
                                         <Star className="h-5 w-5" />
-                                        <span className="font-medium">Send to Agent</span>
+                                        <span className="font-medium">Send to Cross Reference</span>
                                     </button>
                                 </div>
-
-                                <AgentSelectModal
-                                    isOpen={isAgentModalOpen}
-                                    onClose={() => setIsAgentModalOpen(false)}
-                                    filesData={file ? [{
-                                        id: file.id,
-                                        name: file.name,
-                                        type: file.mimeType,
-                                        provider: 'google' // Defaulting to google as it's the primary drive for now
-                                    }] : []}
-                                />
                             </div>
                         </div>
                     </div>

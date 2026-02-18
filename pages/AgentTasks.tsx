@@ -1,38 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { useSocket } from '../context/SocketContext';
-import { AgentTask, AgentMatch } from '../types';
-import { agentService } from '../services/api';
-import { Activity, CheckCircle, Clock, XCircle, Calendar, Phone as PhoneIcon, FileText, Target, Award, ExternalLink } from 'lucide-react';
+import { AgentTask } from '../types';
+import { Activity, CheckCircle, Clock, XCircle, Calendar, Phone as PhoneIcon, FileText } from 'lucide-react';
+import '../styles/PageLayout.css';
 
 export const AgentTasks: React.FC = () => {
     const { socket, isConnected } = useSocket();
     const [tasks, setTasks] = useState<AgentTask[]>([]);
-    const [matches, setMatches] = useState<AgentMatch[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'tasks' | 'matches'>('tasks');
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchTasks = async () => {
             try {
-                const [tasksRes, matchesRes] = await Promise.allSettled([
-                    // For now tasks are mostly socket-based but let's try to fetch matches
-                    Promise.resolve([]), // Placeholder for getTasks if implemented
-                    agentService.getMatches()
-                ]);
-
-                if (matchesRes.status === 'fulfilled') {
-                    setMatches(matchesRes.value);
-                }
-
                 setLoading(false);
             } catch (err: any) {
-                setError(err.message || 'Failed to fetch data');
+                setError(err.message || 'Failed to fetch tasks');
                 setLoading(false);
             }
         };
 
-        fetchData();
+        fetchTasks();
     }, []);
 
     useEffect(() => {
@@ -55,206 +43,96 @@ export const AgentTasks: React.FC = () => {
         }
     }, [socket]);
 
-    const getStatusIcon = (status: AgentTask['status']) => {
+    const getStatusColor = (status: AgentTask['status']) => {
         switch (status) {
-            case 'completed': return <CheckCircle className="h-5 w-5 text-green-500" />;
-            case 'failed': return <XCircle className="h-5 w-5 text-red-500" />;
-            case 'processing': return <Activity className="h-5 w-5 text-blue-500 animate-pulse" />;
-            default: return <Clock className="h-5 w-5 text-gray-400" />;
-        }
-    };
-
-    const getStatusClass = (status: AgentTask['status']) => {
-        switch (status) {
-            case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-            case 'failed': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-            case 'processing': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-            default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+            case 'completed': return 'text-green-400';
+            case 'failed': return 'text-red-400';
+            case 'processing': return 'text-blue-400';
+            default: return 'text-zinc-500';
         }
     };
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] dark:text-white">
-                <div className="animate-spin h-10 w-10 border-4 border-primary-500 border-t-transparent rounded-full mb-4"></div>
-                <p className="text-gray-500 dark:text-gray-400 font-medium">Loading tasks...</p>
+            <div className="dashboard-page flex items-center justify-center h-screen bg-[#050505]">
+                <div className="dash-loader" />
             </div>
         );
     }
 
     return (
-        <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 dark:text-gray-100">
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Agent Tasks</h2>
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                        Monitor the progress of FundingDetective matching cycles in real-time.
-                    </p>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <div className={`h-2.5 w-2.5 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        {isConnected ? 'Real-time connection active' : 'Offline - Updates will be delayed'}
-                    </span>
-                </div>
-            </div>
+        <div className="dashboard-page h-[calc(100vh-4rem)] overflow-hidden flex flex-col p-6 lg:p-12 bg-[#050505]">
+            <div className="max-w-5xl mx-auto w-full flex-grow flex flex-col justify-start -mt-5 z-10">
+                
+                {/* Header - Identical to Profile.tsx */}
+                <header className="mb-6 text-left">
+                    <h2 className="text-3xl font-bold tracking-tighter bg-gradient-to-br from-white to-zinc-500 bg-clip-text text-transparent">
+                        REPORTS
+                    </h2>
+                </header>
 
-            {error && (
-                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg border border-red-100 dark:border-red-800">
-                    {error}
-                </div>
-            )}
+                {error && (
+                    <div className="mb-6 p-4 bg-red-500/10 text-red-400 rounded-2xl border border-red-500/20 text-[11px] font-medium uppercase tracking-wider">
+                        {error}
+                    </div>
+                )}
 
-            <div className="mb-8 border-b border-gray-200 dark:border-gray-700">
-                <nav className="-mb-px flex space-x-8">
-                    <button
-                        onClick={() => setActiveTab('tasks')}
-                        className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'tasks'
-                            ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                            }`}
-                    >
-                        Matching Tasks
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('matches')}
-                        className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'matches'
-                            ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                            }`}
-                    >
-                        Match History
-                    </button>
-                </nav>
-            </div>
+                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                        {tasks.length === 0 ? (
+                            <div className="md:col-span-2 py-32 flex flex-col items-center justify-center bg-white/[0.01] border border-white/5 rounded-3xl">
+                                <Activity className="h-8 w-8 mb-4 text-zinc-800" />
+                                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em]">No active neural processes</p>
+                            </div>
+                        ) : (
+                            tasks.map((task) => (
+                                <div key={task.id} className="bg-white/[0.03] border border-white/5 rounded-3xl p-6 hover:bg-white/[0.05] transition-all duration-500 group flex flex-col justify-between h-full">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2 text-zinc-500 group-hover:text-zinc-400 transition-colors">
+                                                <FileText size={14} />
+                                                <span className="text-[11px] font-medium uppercase tracking-wider">Matrix Instance</span>
+                                            </div>
+                                            <div className={`text-[10px] font-bold uppercase tracking-widest ${getStatusColor(task.status)}`}>
+                                                {task.status}
+                                            </div>
+                                        </div>
+                                        <div className="text-xl font-bold text-white uppercase truncate mb-4">
+                                            {task.filename}
+                                        </div>
+                                    </div>
 
-            {activeTab === 'tasks' ? (
-                <div className="bg-white dark:bg-gray-800 shadow rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead className="bg-gray-50 dark:bg-gray-900/50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Task Info</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Progress</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                {tasks.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={4} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                                            <Activity className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                                            <p className="text-lg">No tasks found</p>
-                                            <p className="text-sm">Trigger a manual task from the dashboard to start.</p>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    tasks.map((task) => (
-                                        <tr key={task.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center">
-                                                    <div className="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
-                                                        <FileText className="h-5 w-5" />
-                                                    </div>
-                                                    <div className="ml-4">
-                                                        <div className="text-sm font-medium text-gray-900 dark:text-white">{task.filename}</div>
-                                                        <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                                                            <PhoneIcon className="h-3 w-3 mr-1" />
-                                                            {task.phone}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-1 max-w-[150px]">
-                                                    <div
-                                                        className="bg-primary-600 h-2.5 rounded-full transition-all duration-500"
-                                                        style={{ width: `${task.progress}%` }}
-                                                    ></div>
-                                                </div>
-                                                <span className="text-xs text-gray-500 dark:text-gray-400">{task.progress}%</span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusClass(task.status)}`}>
-                                                    {getStatusIcon(task.status)}
-                                                    <span className="ml-1.5">{task.status.charAt(0).toUpperCase() + task.status.slice(1)}</span>
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    <Calendar className="h-4 w-4 mr-1.5 opacity-60" />
-                                                    {new Date(task.created_at).toLocaleString()}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <div className="text-[10px] font-medium text-zinc-500 uppercase mb-1">Phone Vector</div>
+                                                <div className="text-xs font-bold text-zinc-300">{task.phone}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-[10px] font-medium text-zinc-500 uppercase mb-1">Timestamp</div>
+                                                <div className="text-xs font-bold text-zinc-300">{new Date(task.created_at).toLocaleDateString()}</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 border-t border-white/5">
+                                            <div className="flex justify-between items-center mb-1.5">
+                                                <span className="text-[10px] font-medium text-zinc-500 uppercase">Progress</span>
+                                                <span className="text-[10px] font-bold text-white">{task.progress}%</span>
+                                            </div>
+                                            <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden">
+                                                <div
+                                                    className="bg-white h-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+                                                    style={{ width: `${task.progress}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
-            ) : (
-                <div className="bg-white dark:bg-gray-800 shadow rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead className="bg-gray-50 dark:bg-gray-900/50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aviso / Opportunity</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Score</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reasoning</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                {matches.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={4} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                                            <Award className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                                            <p className="text-lg">No matches found</p>
-                                            <p className="text-sm">The agent hasn't identified any relevant matches yet.</p>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    matches.map((match) => (
-                                        <tr key={match.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center">
-                                                    <div className="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
-                                                        <Target className="h-5 w-5" />
-                                                    </div>
-                                                    <div className="ml-4">
-                                                        <div className="text-sm font-medium text-gray-900 dark:text-white">{match.title}</div>
-                                                        <div className="text-xs text-gray-500 dark:text-gray-400">ID: {match.aviso_id}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center">
-                                                    <div className={`text-sm font-bold ${match.match_score >= 80 ? 'text-green-600' : match.match_score >= 50 ? 'text-yellow-600' : 'text-gray-600'}`}>
-                                                        {match.match_score}%
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate" title={match.reasoning}>
-                                                    {match.reasoning || 'No details provided'}
-                                                </p>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    <Calendar className="h-4 w-4 mr-1.5 opacity-60" />
-                                                    {new Date(match.matched_at).toLocaleDateString()}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
+            </div>
         </div>
     );
 };
