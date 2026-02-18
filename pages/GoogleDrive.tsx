@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { driveService, authService } from '../services/api';
 import { DriveFile } from '../types';
 import { ConfirmationModal } from '../components/ConfirmationModal';
-import '../styles/Dashboard.css';
+import '../styles/PageLayout.css';
 
 export const GoogleDrive: React.FC = () => {
     const { user, checkAuth } = useAuth();
@@ -237,7 +237,7 @@ export const GoogleDrive: React.FC = () => {
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-2 uppercase tracking-tight">Connect Cloud Drive</h3>
                                 <p className="text-zinc-500 text-sm mb-8 leading-relaxed">
-                                    Access your Google Workspace files directly within your dashboard. Securely sync and manage your data.
+                                    Access your Google Workspace connections directly within your dashboard. Securely sync and manage your data.
                                 </p>
 
                                 {error && (
@@ -476,4 +476,3 @@ export const GoogleDrive: React.FC = () => {
         </div>
     );
 };
-

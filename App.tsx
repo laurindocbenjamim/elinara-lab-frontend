@@ -6,7 +6,6 @@ import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
-import { Dashboard } from './pages/Dashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { GoogleDrive } from './pages/GoogleDrive';
 import { OneDrive } from './pages/OneDrive';
@@ -49,14 +48,6 @@ const AppRoutes = () => {
         {/* Portfolio Routes removed */}
 
         {/* Protected Routes */}
-        <Route
-          path="dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
         <Route
           path="agent"
           element={
@@ -127,7 +118,7 @@ const AppRoutes = () => {
         {/* Specific path for backend OAuth callback redirect - made public to avoid redirect loop before token is set */}
         <Route
           path="admin/user"
-          element={<Dashboard />}
+          element={<Navigate to="/" replace />}
         />
       </Route>
 

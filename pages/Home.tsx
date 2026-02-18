@@ -11,7 +11,7 @@ export const Home: React.FC = () => {
   const handleDevAccess = async (role: 'user' | 'admin') => {
     localStorage.setItem('dev_session_role', role);
     await checkAuth();
-    navigate('/dashboard');
+    navigate('/agent');
   };
 
   return (

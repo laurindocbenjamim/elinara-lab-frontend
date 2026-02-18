@@ -102,7 +102,7 @@ export enum AuthStatus {
   UNAUTHENTICATED = 'UNAUTHENTICATED',
 }
 
-// Agent FundingDetective Types
+// Agents Types
 export interface AgentStatus {
   agent_status: 'active' | 'stopped' | 'paused';
   plan: string;

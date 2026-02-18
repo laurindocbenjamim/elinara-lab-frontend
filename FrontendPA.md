@@ -21,10 +21,11 @@ Este documento resume as alterações que fizemos no frontend e, em especial, co
   - `components/Navbar.tsx`
 
 ## Dashboard (após login)
-- O `Dashboard` foi reestruturado para o novo visual (header, cards, grid, glow/noise):
-  - `pages/Dashboard.tsx`
-  - `styles/Dashboard.css`
-- O `Layout` foi ajustado para deixar o `Dashboard` em modo standalone (sem sidebar/navbar/footer nessa rota):
+- O Dashboard original foi removido para simplificar a navegação.
+- O `PageLayout.css` foi criado para centralizar componentes visuais (header, cards, grid, glow/noise):
+  - `styles/PageLayout.css` (Substituiu o `Dashboard.css`)
+- O `Layout` foi ajustado para deixar as páginas principais (`Agent`, `AgentTasks`, etc.) com o visual unificado.
+- A página inicial pós-login agora é a `/agent`.
   - `components/Layout.tsx`
 
 ## Tema unificado das páginas autenticadas

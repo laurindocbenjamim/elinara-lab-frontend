@@ -1,11 +1,9 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-    LayoutDashboard,
-    BrainCircuit,
+    Bot,
     ListTodo,
     HardDrive,
-    CreditCard,
     Settings,
     ChevronRight,
     Orbit
@@ -20,10 +18,9 @@ export const Sidebar: React.FC = () => {
     const companyName = user?.username || 'Workspace';
 
     const menuItems = [
-        { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-        { name: 'FundingDetective', icon: BrainCircuit, path: '/agent' },
-        { name: 'Agent Tasks', icon: ListTodo, path: '/agent-tasks' },
-        { name: 'Cloud Files', icon: HardDrive, path: '/drive' },
+        { name: 'Agents', icon: Bot, path: '/agent' },
+        { name: 'Connections', icon: HardDrive, path: '/drive' },
+        { name: 'Reports', icon: ListTodo, path: '/agent-tasks' },
         { name: 'Settings', icon: Settings, path: '/profile' },
     ];
 
@@ -65,27 +62,6 @@ export const Sidebar: React.FC = () => {
                         );
                     })}
                 </nav>
-            </div>
-
-            <div className="mt-auto p-6 border-t border-white/10">
-                <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-                    <div className="flex items-center gap-3 mb-3">
-                        <div className="h-8 w-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white font-bold text-sm">
-                            {user?.username?.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-zinc-100 truncate">{user?.username}</p>
-                            <p className="text-[10px] text-zinc-500 truncate capitalize">{user?.role || 'User'}</p>
-                        </div>
-                    </div>
-                    <div className="w-full bg-white/10 rounded-full h-1.5 mb-2">
-                        <div className="bg-white h-1.5 rounded-full w-2/3"></div>
-                    </div>
-                    <div className="flex justify-between items-center text-[10px] font-medium text-zinc-500">
-                        <span>Quota Used</span>
-                        <span>66%</span>
-                    </div>
-                </div>
             </div>
         </aside>
     );

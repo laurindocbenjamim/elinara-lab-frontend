@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { oneDriveService, authService } from '../services/api';
 import { DriveFile } from '../types';
 import { ConfirmationModal } from '../components/ConfirmationModal';
-import '../styles/Dashboard.css';
+import '../styles/PageLayout.css';
 
 export const OneDrive: React.FC = () => {
     const { user, checkAuth } = useAuth();
@@ -236,7 +236,7 @@ export const OneDrive: React.FC = () => {
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-2 uppercase tracking-tight">Connect OneDrive</h3>
                                 <p className="text-zinc-500 text-sm mb-8 leading-relaxed">
-                                    To browse your Microsoft Cloud files, you need to sign in with Microsoft permissions.
+                                    To browse your Microsoft Connections, you need to sign in with Microsoft permissions.
                                 </p>
 
                                 {error && (

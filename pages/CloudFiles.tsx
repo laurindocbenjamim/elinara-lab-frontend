@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { cloudService } from '../services/api';
 import { CloudFilesResponse, CloudFile } from '../types';
 import { File, Folder, HardDrive, AlertTriangle, ExternalLink, RefreshCw } from 'lucide-react';
-import '../styles/Dashboard.css';
+import '../styles/PageLayout.css';
 
 export const CloudFiles: React.FC = () => {
     const [loading, setLoading] = useState(true);
@@ -30,7 +30,7 @@ export const CloudFiles: React.FC = () => {
         return (
             <div className="dashboard-page flex flex-col items-center justify-center h-screen bg-[#050505]">
                 <div className="dash-loader mb-4"></div>
-                <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">Syncing Cloud Ecosystem...</p>
+                <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">Syncing Connections...</p>
             </div>
         );
     }
@@ -62,7 +62,7 @@ export const CloudFiles: React.FC = () => {
                 <header className="mb-8 flex justify-between items-center">
                     <div className="text-left">
                         <h2 className="text-3xl font-bold tracking-tighter bg-gradient-to-br from-white to-zinc-500 bg-clip-text text-transparent uppercase">
-                            Unified Storage
+                            CONNECTIONS
                         </h2>
                     </div>
                     <button

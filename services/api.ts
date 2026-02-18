@@ -152,7 +152,7 @@ apiClient.interceptors.response.use(
           // If retry failed, do NOT redirect to login for Disconnect actions, per user request
           if (originalRequest?.url?.includes('/disconnect')) {
             console.warn('Disconnect falhou por CSRF/Auth. Redirecionando para Dashboard conforme solicitado.');
-            window.location.href = '/#/dashboard';
+            window.location.href = '/#/login';
             return Promise.reject(new Error('Falha ao desconectar. Redirecionando...'));
           }
         }
@@ -177,7 +177,7 @@ apiClient.interceptors.response.use(
         // Check if this is a disconnect request - avoid kicking to login if it fails
         if (originalRequest?.url?.includes('/disconnect')) {
           console.warn('Disconnect falhou (401). Redirecionando para Dashboard.');
-          window.location.href = '/#/dashboard';
+          window.location.href = '/#/login';
           return Promise.reject(new Error('Sessão expirada durante disconnect.'));
         }
 
@@ -440,7 +440,7 @@ export const cloudFilesService = {
   }
 };
 
-// FundingDetective Agent Service
+// Agents Service
 export const agentService = {
   getStatus: async (): Promise<AgentStatus> => {
     return apiClient.get('/agent/status');

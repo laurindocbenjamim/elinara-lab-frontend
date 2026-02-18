@@ -12,7 +12,7 @@ export const Register: React.FC = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (status === 'AUTHENTICATED') {
-      navigate('/dashboard');
+      navigate('/agent');
     }
   }, [status, navigate]);
   // Using RegisterRequest structure directly for state

@@ -12,8 +12,7 @@ export const Layout: React.FC = () => {
   const isAuthenticated = status === AuthStatus.AUTHENTICATED;
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
   const isHomePage = location.pathname === '/';
-  const isDashboardPage = location.pathname === '/dashboard';
-  const isStandalonePage = isHomePage || isDashboardPage;
+  const isStandalonePage = isHomePage;
   const isAppPage = isAuthenticated && !isAuthPage && !isStandalonePage;
 
   return (
@@ -25,15 +24,6 @@ export const Layout: React.FC = () => {
           <Outlet />
         </main>
       </div>
-      {(!isAuthPage && !isStandalonePage) && (
-        <footer className={`${isAppPage ? 'bg-[rgba(10,10,12,0.8)] border-t border-white/10 text-zinc-400' : 'bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700'} mt-auto py-6`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <p className={`text-center text-sm ${isAppPage ? 'text-zinc-500' : 'text-gray-500 dark:text-gray-400'}`}>
-              &copy; {new Date().getFullYear()} ElinaraLab. All rights reserved.
-            </p>
-          </div>
-        </footer>
-      )}
     </div>
   );
 };

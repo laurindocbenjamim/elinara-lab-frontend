@@ -21,7 +21,7 @@ export const Login: React.FC = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (status === 'AUTHENTICATED') {
-      navigate('/dashboard');
+      navigate('/agent');
     }
   }, [status, navigate]);
 
@@ -39,7 +39,7 @@ export const Login: React.FC = () => {
       const response = await authService.login(formData);
       if (response.success || response.access_token || response.status_code === 200) {
         await login(response.access_token || '');
-        navigate('/dashboard');
+        navigate('/agent');
       } else {
         setError('Login failed. Please check your credentials.');
       }

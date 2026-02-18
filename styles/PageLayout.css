@@ -1,19 +1,24 @@
+/* PageLayout.css - Common UI components for Elinara Labs */
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap");
+
 .dashboard-page {
-  min-height: 100vh;
   background-color: #050505;
   color: #ffffff;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   position: relative;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }
 
+/* --- Atmosphere --- */
 .dashboard-page::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+  background-image: url('https://grainy-gradients.vercel.app/noise.svg');
   opacity: 0.2;
   mix-blend-mode: overlay;
   pointer-events: none;
@@ -31,12 +36,13 @@
   z-index: 0;
 }
 
+/* --- HEADER (Centered Branding) --- */
 .dash-header {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  padding: 2rem 1.5rem 1.5rem 1.5rem; 
   width: 100%;
   max-width: 100%;
   margin: 0;
@@ -59,7 +65,7 @@
   font-size: 0.9rem;
   font-weight: 700;
   letter-spacing: 0.2em;
-  color: #a1a1aa;
+  color: #a1a1aa; 
   text-transform: uppercase;
 }
 
@@ -73,14 +79,6 @@
   line-height: 1.1;
 }
 
-.dash-subtitle {
-  margin: 0;
-  color: #a1a1aa;
-  font-size: 0.8rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
 .dash-top-actions {
   position: absolute;
   top: 1.5rem;
@@ -90,6 +88,7 @@
   z-index: 50;
 }
 
+/* --- MAIN GRID (BENTO LAYOUT) --- */
 .dash-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -106,6 +105,7 @@
   box-sizing: border-box;
 }
 
+/* Grid Utilities */
 .col-span-2 {
   grid-column: span 2;
 }
@@ -114,14 +114,15 @@
   grid-row: span 2;
 }
 
+/* --- CARDS --- */
 .dash-card {
   width: 100%;
   background: rgba(10, 10, 12, 0.6);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid transparent;
-  background-image: linear-gradient(rgba(10, 10, 12, 0.6), rgba(10, 10, 12, 0.6)),
-    linear-gradient(to bottom right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+  background-image: linear-gradient(rgba(10, 10, 12, 0.6), rgba(10, 10, 12, 0.6)), 
+                    linear-gradient(to bottom right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
   background-origin: border-box;
   background-clip: padding-box, border-box;
   border-radius: 12px;
@@ -140,10 +141,11 @@
   margin-bottom: 0.5rem;
   letter-spacing: -0.01em;
   text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
   padding-bottom: 0.5rem;
 }
 
+/* --- INPUTS --- */
 .vault-field {
   display: flex;
   flex-direction: column;
@@ -177,6 +179,7 @@
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.05);
 }
 
+/* --- BUTTON --- */
 .dash-save-btn {
   margin-top: 0;
   width: 100%;
@@ -198,6 +201,7 @@
   transform: translateY(-1px);
 }
 
+/* --- AGENT STATUS --- */
 .agent-status-row {
   display: flex;
   flex-direction: column;
@@ -227,7 +231,7 @@
 
 .status-dot-offline {
   background-color: #ef4444;
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.45);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
 }
 
 .status-text {
@@ -237,6 +241,7 @@
   color: #ffffff;
 }
 
+/* --- LOGS --- */
 .logs-container {
   margin-top: 1rem;
   padding-top: 1rem;
@@ -275,7 +280,6 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
-  text-decoration: none;
 }
 
 .dash-logout-btn:hover {
@@ -283,144 +287,68 @@
   color: #ffffff;
 }
 
+/* Agent Control specific */
 .dash-control-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .dash-control-btn {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.45rem;
-  background: rgba(255, 255, 255, 0.04);
-  color: #f4f4f5;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
-  padding: 0.7rem;
+  color: #ffffff;
   font-size: 0.8rem;
   font-weight: 600;
+  transition: all 0.2s;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .dash-control-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
 }
 
 .dash-control-btn.is-start:hover {
-  border-color: rgba(16, 185, 129, 0.5);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
 .dash-control-btn.is-pause:hover {
-  border-color: rgba(245, 158, 11, 0.5);
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.3);
 }
 
 .dash-control-btn.is-stop:hover {
-  border-color: rgba(239, 68, 68, 0.5);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 .dash-control-icon {
-  width: 14px;
-  height: 14px;
-}
-
-.dash-mini-metrics {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
-.dash-mini-metric {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 8px;
-  padding: 0.7rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.dash-mini-label {
-  font-size: 0.7rem;
-  color: #a1a1aa;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.dash-mini-value {
-  font-size: 0.95rem;
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.dash-link-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
-.dash-link-card {
-  text-decoration: none;
-  color: #ffffff;
-  font-size: 0.85rem;
-  font-weight: 600;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  padding: 0.85rem;
-  transition: all 0.2s ease;
-}
-
-.dash-link-card:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateY(-1px);
-}
-
-.dash-inline-message {
-  margin: 0 1.5rem 1rem 1.5rem;
-  padding: 0.75rem 0.9rem;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  z-index: 12;
-  position: relative;
-}
-
-.dash-inline-message.is-success {
-  color: #86efac;
-  background: rgba(34, 197, 94, 0.08);
-  border-color: rgba(34, 197, 94, 0.35);
-}
-
-.dash-inline-message.is-error {
-  color: #fca5a5;
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.35);
-}
-
-.dashboard-loading {
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .dash-loader {
-  width: 38px;
-  height: 38px;
-  border: 3px solid rgba(255, 255, 255, 0.25);
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
   border-top-color: #ffffff;
   border-radius: 50%;
-  animation: spin 0.9s linear infinite;
-  position: relative;
-  z-index: 10;
+  animation: spin 1s linear infinite;
 }
 
-.dash-loading-text {
-  color: #a1a1aa;
-  font-size: 0.9rem;
-  position: relative;
-  z-index: 10;
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 @keyframes pulse {
@@ -429,57 +357,11 @@
   100% { opacity: 1; }
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Fix for browser autofill rectangles */
-input:-webkit-autofill,
-input:-webkit-autofill:hover, 
-input:-webkit-autofill:focus, 
-input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px #050505 inset !important;
-    -webkit-text-fill-color: white !important;
-    transition: background-color 5000s ease-in-out 0s;
-}
-
-/* Ensure inputs in profile/dashboard are truly transparent */
-.clean-input {
-    background-color: transparent !important;
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
-    appearance: none !important;
-    -webkit-appearance: none !important;
-}
-
 @media (max-width: 1100px) {
   .dash-grid {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
   }
-
-  .col-span-2 {
-    grid-column: auto;
-  }
-
-  .row-span-2 {
-    grid-row: auto;
-  }
-
-  .dash-top-actions {
-    position: static;
-    margin-top: 1rem;
-  }
-
-  .dash-branding-corner {
-    position: static;
-  }
-
-  .dash-control-grid,
-  .dash-mini-metrics,
-  .dash-link-grid {
-    grid-template-columns: 1fr;
-  }
+  .col-span-2 { grid-column: auto; }
+  .row-span-2 { grid-row: auto; }
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Menu, X, LogOut, LayoutDashboard, Shield, HardDrive, Settings, Sun, Moon, Monitor, User as UserIcon, CreditCard } from 'lucide-react';
+import { Menu, X, LogOut, Shield, HardDrive, Settings, Sun, Moon, Monitor, User as UserIcon, CreditCard } from 'lucide-react';
 import { AuthStatus } from '../types';
 
 export const Navbar: React.FC = () => {
@@ -73,8 +73,7 @@ export const Navbar: React.FC = () => {
           <div className="px-4 pt-2 pb-6 space-y-4">
             {status === AuthStatus.AUTHENTICATED && user ? (
               <>
-                <Link to="/dashboard" className="block text-gray-400 hover:text-white transition-colors py-2">Dashboard</Link>
-                <Link to="/agent" className="block text-gray-400 hover:text-white transition-colors py-2">Agent</Link>
+                <Link to="/agent" className="block text-gray-400 hover:text-white transition-colors py-2">Agents</Link>
                 <button onClick={handleLogout} className="block w-full text-left text-red-500 py-2">Sign out</button>
               </>
             ) : (

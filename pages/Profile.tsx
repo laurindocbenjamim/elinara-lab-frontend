@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { userService } from '../services/api';
 import { AuthStatus } from '../types';
 import { LogOut, User as UserIcon, Building2, Mail, Smartphone, ShieldCheck, ArrowRight, Eye, EyeOff } from 'lucide-react';
-import '../styles/Dashboard.css';
+import '../styles/PageLayout.css';
 
 export const Profile: React.FC = () => {
     const { user, status, logout, checkAuth } = useAuth();
