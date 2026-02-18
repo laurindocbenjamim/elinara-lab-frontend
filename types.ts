@@ -102,40 +102,15 @@ export enum AuthStatus {
   UNAUTHENTICATED = 'UNAUTHENTICATED',
 }
 
-// Agent FundingDetective Types
+// Agents Types
 export interface AgentStatus {
   agent_status: 'active' | 'stopped' | 'paused';
   plan: string;
   selected_model: string;
-  id?: number;
-}
-
-export interface AgentSettings {
-  id: number;
-  user_id: number | string;
-  agent_status: 'active' | 'stopped' | 'paused';
-  agent_id: string;
-  execution_mode: 'manual' | 'scheduled' | 'interval';
-  alert_emails: string[];
-  execution_interval?: number;
-  scheduled_time?: string;
-  llm_model: string;
-  llm_provider: string;
 }
 
 export interface AgentControlRequest {
   action: 'start' | 'stop' | 'pause';
-  user_id?: number | string;
-  email?: string;
-  agent_id?: string;
-  execution_mode?: 'manual' | 'scheduled' | 'interval';
-  execution_interval?: number;
-  scheduled_time?: string;
-}
-
-export interface AgentControlResponse {
-  msg: string;
-  agent_settings: AgentSettings;
 }
 
 export interface AgentConfigRequest {
@@ -165,57 +140,4 @@ export interface AgentTask {
 
 export interface ConnectionEmailsRequest {
   connection_emails: string[];
-}
-export interface AgentMatch {
-  id: number;
-  aviso_id: string;
-  title: string;
-  match_score: number;
-  reasoning?: string;
-  matched_at: string;
-  task_id?: string;
-}
-
-// Process API Types
-export interface Process {
-  id: number;
-  user_id: number;
-  name: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  trigger_type: 'manual' | 'scheduled' | 'webhook';
-  config_snapshot: Record<string, any>;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ProcessCreateRequest {
-  name: string;
-  trigger_type: 'manual' | 'scheduled' | 'webhook';
-  config_snapshot: Record<string, any>;
-}
-export interface DataSource {
-  id: string; // Changed to string (mongo_id)
-  process_id: string; // Changed to string
-  platform: 'google_drive' | 'sharepoint' | 'external_api';
-  resource_identifier: string;
-  resource_name?: string;
-  resource_format?: string;
-  config?: any[]; // Default structure is a list of objects
-  user_id?: number;
-  agent_id?: string;
-  agent_name?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DataSourceCreateRequest {
-  process_id?: string;
-  platform: 'google_drive' | 'sharepoint' | 'external_api';
-  resource_identifier: string;
-  resource_name?: string;
-  resource_format?: string;
-  config: any[];
-  user_id?: number;
-  agent_id?: string;
-  agent_name?: string;
 }

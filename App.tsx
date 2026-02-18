@@ -3,22 +3,17 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Layout } from './components/Layout';
+import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
-import { Dashboard } from './pages/Dashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { GoogleDrive } from './pages/GoogleDrive';
 import { OneDrive } from './pages/OneDrive';
 import { FileProperties } from './pages/FileProperties';
-
 import { CrossReference } from './pages/CrossReference';
 import { AgentTasks } from './pages/AgentTasks';
 import { Agent } from './pages/Agent';
-import { AgentSettingsPage } from './pages/AgentSettingsPage';
-import { AgentActions } from './pages/AgentActions';
 import { Profile } from './pages/Profile';
-import { Billing } from './pages/Billing';
-import { DataSources } from './pages/DataSources';
 import { SocketProvider } from './context/SocketContext';
 import { AuthStatus } from './types';
 
@@ -46,7 +41,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        <Route index element={<Navigate to="/login" replace />} />
+        <Route index element={<Home />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
 
@@ -54,26 +49,10 @@ const AppRoutes = () => {
 
         {/* Protected Routes */}
         <Route
-          path="dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="agent/:processId?"
+          path="agent"
           element={
             <ProtectedRoute>
               <Agent />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="agent/:processId/settings"
-          element={
-            <ProtectedRoute>
-              <AgentSettingsPage />
             </ProtectedRoute>
           }
         />
@@ -86,14 +65,6 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="agent-actions"
-          element={
-            <ProtectedRoute>
-              <AgentActions />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="profile"
           element={
             <ProtectedRoute>
@@ -102,26 +73,10 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="billing"
-          element={
-            <ProtectedRoute>
-              <Billing />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="datasources"
-          element={
-            <ProtectedRoute>
-              <DataSources />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="drive"
           element={
             <ProtectedRoute>
-              <GoogleDrive />
+               <GoogleDrive />
             </ProtectedRoute>
           }
         />
@@ -163,7 +118,7 @@ const AppRoutes = () => {
         {/* Specific path for backend OAuth callback redirect - made public to avoid redirect loop before token is set */}
         <Route
           path="admin/user"
-          element={<Dashboard />}
+          element={<Navigate to="/" replace />}
         />
       </Route>
 

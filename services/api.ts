@@ -10,33 +10,16 @@ import {
   RegisterRequest,
   AgentStatus,
   AgentTask,
-  AgentTaskResponse,
-  AgentMatch,
-  Process,
-  ProcessCreateRequest,
-  DataSource,
-  DataSourceCreateRequest,
-  AgentControlRequest,
-  AgentControlResponse
+  AgentTaskResponse
 } from '../types';
 import { config } from '../config';
 
 const API_BASE_URL = config.API_BASE_URL;
-const AGENT_BASE_URL = config.AGENT_BASE_URL;
 
-// Create centralized Axios instance for main backend
+// Create centralized Axios instance
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Create Axios instance for Agent service
-const agentApiClient = axios.create({
-  baseURL: AGENT_BASE_URL,
-  withCredentials: true,
+  withCredentials: true, // Para cookies HttpOnly
   headers: {
     'Content-Type': 'application/json',
   },
@@ -51,6 +34,16 @@ const getCookie = (name: string): string | null => {
   if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
   return null;
 };
+
+// Helper para remover cookie
+const deleteCookie = (name: string): void => {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+};
+
+// Cache para evitar múltiplas verificações
+let csrfTokenValidated = false;
+let csrfValidationInProgress = false;
 
 // Verificar se método precisa de CSRF
 const requiresCsrfToken = (method?: string): boolean => {
@@ -80,56 +73,51 @@ const getCsrfTokenFromCookie = (): string | null => {
   );
 };
 
-// Request Interceptor para o backend principal
+// Request Interceptor
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     // Para métodos que modificam estado, adicionar CSRF token
     if (requiresCsrfToken(config.method)) {
       const csrfToken = getCsrfTokenFromCookie();
-      /*console.log('CSRF token encontrado para requisição principal:', {
-        method: config.method,
-        url: config.url,
-        csrfToken
-      });*/
+
       if (csrfToken) {
         config.headers['X-CSRF-Token'] = csrfToken;
       } else {
-        console.warn('CSRF token não encontrado para requisição principal:', {
+        console.warn('CSRF token não encontrado para requisição:', {
           method: config.method,
-          url: config.url
+          url: config.url,
+          requiresCsrf: requiresCsrfToken(config.method)
         });
+
+        // Se é uma requisição crítica (não GET), logamos o aviso
+        if (config.method?.toUpperCase() !== 'GET') {
+          console.warn('Atenção: Requisição sem CSRF token enviado. O backend pode rejeitar.');
+        }
       }
     }
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
-// Request Interceptor para o serviço do Agent (compartilha CSRF do mesmo domínio)
-agentApiClient.interceptors.request.use(
-  async (config: InternalAxiosRequestConfig) => {
-    if (requiresCsrfToken(config.method)) {
-      const csrfToken = getCsrfTokenFromCookie();
-      if (csrfToken) {
-        config.headers['X-CSRF-Token'] = csrfToken;
-      } else {
-        console.warn('CSRF token não encontrado para requisição do Agent');
-      }
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Response Interceptor para o backend principal
+// Response Interceptor
 apiClient.interceptors.response.use(
   (response) => {
+    // Verificar se a resposta contém um novo CSRF token
+    // (útil para refresh de sessão ou após login)
+    if (response.headers['x-csrf-token'] || response.data?.csrf_token) {
+      const newCsrfToken = response.headers['x-csrf-token'] || response.data.csrf_token;
+      // O backend deve definir o cookie, mas mantemos lógica para segurança
+      console.debug('Novo CSRF token recebido na resposta');
+    }
+
     return response.data;
   },
   async (error: AxiosError) => {
     const originalRequest = error.config as any;
-    // ... (existing logic)
 
     if (error.response) {
       const status = error.response.status;
@@ -164,7 +152,7 @@ apiClient.interceptors.response.use(
           // If retry failed, do NOT redirect to login for Disconnect actions, per user request
           if (originalRequest?.url?.includes('/disconnect')) {
             console.warn('Disconnect falhou por CSRF/Auth. Redirecionando para Dashboard conforme solicitado.');
-            window.location.href = '/#/dashboard';
+            window.location.href = '/#/login';
             return Promise.reject(new Error('Falha ao desconectar. Redirecionando...'));
           }
         }
@@ -184,11 +172,12 @@ apiClient.interceptors.response.use(
         console.warn('Sessão expirada ou inválida');
 
         // Limpar qualquer estado de CSRF
+        csrfTokenValidated = false;
 
         // Check if this is a disconnect request - avoid kicking to login if it fails
         if (originalRequest?.url?.includes('/disconnect')) {
           console.warn('Disconnect falhou (401). Redirecionando para Dashboard.');
-          window.location.href = '/#/dashboard';
+          window.location.href = '/#/login';
           return Promise.reject(new Error('Sessão expirada durante disconnect.'));
         }
 
@@ -248,17 +237,6 @@ apiClient.interceptors.response.use(
   }
 );
 
-// Response Interceptor para o serviço do Agent (simplificado)
-agentApiClient.interceptors.response.use(
-  (response) => {
-    return response.data;
-  },
-  (error) => {
-    // Możemy tu dodać specyficzną logikę dla błędów agenta, jeśli potrzeba
-    return Promise.reject(error);
-  }
-);
-
 // Serviços de Autenticação
 export const authService = {
   login: async (credentials: { username: string; password: string }): Promise<AuthResponse> => {
@@ -278,6 +256,7 @@ export const authService = {
       return response;
     } finally {
       // Limpar estado de CSRF após logout
+      csrfTokenValidated = false;
     }
   },
 
@@ -304,6 +283,7 @@ export const authService = {
 
   googleLogout: async (): Promise<GenericResponse> => {
     const response = await apiClient.get<any, GenericResponse>('/auth2/google/logout');
+    csrfTokenValidated = false;
     return response;
   },
 
@@ -317,6 +297,7 @@ export const authService = {
 
   githubLogout: async (): Promise<GenericResponse> => {
     const response = await apiClient.post<any, GenericResponse>('/auth2/github/logout');
+    csrfTokenValidated = false;
     return response;
   },
 
@@ -459,75 +440,37 @@ export const cloudFilesService = {
   }
 };
 
-// FundingDetective Agent Service
+// Agents Service
 export const agentService = {
-  getStatus: async (agentId?: string): Promise<AgentStatus> => {
-    const url = agentId ? `/agent/status?agent_id=${agentId}` : '/agent/status';
-    return agentApiClient.get(url);
+  getStatus: async (): Promise<AgentStatus> => {
+    return apiClient.get('/agent/status');
   },
 
-  control: async (params: AgentControlRequest): Promise<AgentControlResponse> => {
-    return agentApiClient.post('/agent/control', params);
+  control: async (action: 'start' | 'stop' | 'pause'): Promise<{ msg: string; status: string }> => {
+    return apiClient.post('/agent/control', { action });
   },
 
-  updateConfig: async (agentId: string, model: string): Promise<{ msg: string; selected_model: string }> => {
-    return agentApiClient.post('/agent/config', { agent_id: agentId, model });
+  updateConfig: async (model: string): Promise<{ msg: string; selected_model: string }> => {
+    return apiClient.post('/agent/config', { model });
   },
 
   triggerTask: async (filename: string, phone: string): Promise<AgentTaskResponse> => {
-    return agentApiClient.post('/agent/task', { filename, phone });
+    return apiClient.post('/agent/task', { filename, phone });
   },
 
   getTaskStatus: async (taskId: string): Promise<AgentTask> => {
-    return agentApiClient.get(`/agent/task/${taskId}`);
-  },
-
-  getMatches: async (): Promise<AgentMatch[]> => {
-    return agentApiClient.get('/agent/matches');
+    return apiClient.get(`/agent/task/${taskId}`);
   }
 };
 
 // Configuration Service
 export const configService = {
-  get: async (agentId?: string): Promise<import('../types').AgentSettings> => {
-    const url = agentId ? `/config/update?agent_id=${agentId}` : '/config/update';
-    return agentApiClient.get(url);
-  },
-
-  update: async (agentId: string, data: Partial<import('../types').AgentSettings>): Promise<import('../types').AgentSettings> => {
-    return agentApiClient.post('/config/update', { ...data, agent_id: agentId });
-  },
-
-  // Legacy support for emails if still needed elsewhere
   getConnectionEmails: async (): Promise<{ connection_emails: string[] }> => {
-    return agentApiClient.get('/config/connection-emails');
+    return apiClient.get('/config/connection-emails');
   },
 
   updateConnectionEmails: async (emails: string[]): Promise<GenericResponse> => {
-    return agentApiClient.post('/config/connection-emails', { connection_emails: emails });
-  }
-};
-
-// Processes Service
-export const processesService = {
-  list: async (): Promise<Process[]> => {
-    return apiClient.get('/admin/processes');
-  },
-
-  create: async (data: ProcessCreateRequest): Promise<Process> => {
-    return apiClient.post('/admin/processes', data);
-  },
-
-  get: async (id: number): Promise<Process> => {
-    return apiClient.get(`/admin/processes/${id}`);
-  },
-
-  update: async (id: number, data: Partial<Process>): Promise<Process> => {
-    return apiClient.put(`/admin/processes/${id}`, data);
-  },
-
-  delete: async (id: number): Promise<GenericResponse> => {
-    return apiClient.delete(`/admin/processes/${id}`);
+    return apiClient.post('/config/connection-emails', { connection_emails: emails });
   }
 };
 
@@ -544,27 +487,3 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 export default apiClient;
-export const dataSourcesService = {
-  list: async (processId?: string): Promise<DataSource[]> => {
-    const url = processId ? `/datasources?process_id=${processId}` : '/datasources';
-    return agentApiClient.get(url);
-  },
-  listUser: async (): Promise<DataSource[]> => {
-    return agentApiClient.get('/user/datasources');
-  },
-  create: async (data: DataSourceCreateRequest | DataSourceCreateRequest[]): Promise<{ msg: string; datasource?: DataSource; datasources?: DataSource[] }> => {
-    return agentApiClient.post('/datasources', data);
-  },
-  get: async (id: string): Promise<DataSource> => {
-    return agentApiClient.get(`/datasources/${id}`);
-  },
-  update: async (id: string, data: Partial<DataSource>): Promise<{ msg: string }> => {
-    return agentApiClient.put(`/datasources/${id}`, data);
-  },
-  delete: async (id: string): Promise<{ msg: string }> => {
-    return agentApiClient.delete(`/datasources/${id}`);
-  },
-  deleteBulk: async (ids: string[]): Promise<{ msg: string }> => {
-    return agentApiClient.delete('/datasources', { data: { ids } });
-  }
-};

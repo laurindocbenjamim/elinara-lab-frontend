@@ -3,8 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/api'; // Use authService for public registration
 import { RegisterRequest } from '../types';
-import { countries } from '../data/countries';
-import { User as UserIcon, Mail, Lock, Phone, Globe, CheckCircle, ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { User as UserIcon, Mail, Lock, CheckCircle, Eye, EyeOff } from 'lucide-react';
 
 export const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -13,7 +12,7 @@ export const Register: React.FC = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (status === 'AUTHENTICATED') {
-      navigate('/dashboard');
+      navigate('/agent');
     }
   }, [status, navigate]);
   // Using RegisterRequest structure directly for state
@@ -36,16 +35,6 @@ export const Register: React.FC = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedCountryName = e.target.value;
-    const country = countries.find(c => c.name === selectedCountryName);
-    setFormData({
-      ...formData,
-      countryName: selectedCountryName,
-      countryTelCode: country ? country.dial_code : formData.countryTelCode
-    });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -66,7 +55,10 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[100vh] flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4 sm:px-6 lg:px-8 relative">
+    <div className="min-h-[100vh] flex items-center justify-center bg-[#050505] py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(30,58,138,0.08),transparent_60%)]" />
+      <div className="pointer-events-none absolute inset-0 opacity-20 mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+
       {/* Success Popup Overlay */}
       {showSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
@@ -86,17 +78,14 @@ export const Register: React.FC = () => {
         </div>
       )}
 
-      <div className="w-full max-w-md animate-fade-in">
+      <div className="w-full max-w-md animate-fade-in relative z-10">
         {/* Glass morphism card */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-2xl">
+        <div className="rounded-2xl p-8 border border-white/10 shadow-2xl backdrop-blur-xl bg-[rgba(10,10,12,0.6)]">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 mb-4">
+            <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-white/10 border border-white/10 mb-4">
               <UserIcon className="h-6 w-6 text-white" />
             </div>
             <h2 className="text-3xl font-bold text-white">Create Account</h2>
-            <p className="mt-2 text-sm text-gray-300">
-              Join our engineering community
-            </p>
           </div>
 
           {error && (
@@ -117,7 +106,7 @@ export const Register: React.FC = () => {
                   placeholder="First name"
                   value={formData.firstName}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all duration-300"
                 />
               </div>
               <div className="relative group">
@@ -129,7 +118,7 @@ export const Register: React.FC = () => {
                   placeholder="Last name"
                   value={formData.lastName}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all duration-300"
                 />
               </div>
             </div>
@@ -137,7 +126,7 @@ export const Register: React.FC = () => {
             {/* Email */}
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-green-400 transition-colors" />
+                <Mail className="h-5 w-5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
               </div>
               <input
                 id="authEmail"
@@ -147,14 +136,14 @@ export const Register: React.FC = () => {
                 placeholder="Email address"
                 value={formData.authEmail}
                 onChange={handleChange}
-                className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all duration-300"
               />
             </div>
 
             {/* Password */}
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-green-400 transition-colors" />
+                <Lock className="h-5 w-5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
               </div>
               <input
                 id="authPassword"
@@ -164,85 +153,26 @@ export const Register: React.FC = () => {
                 placeholder="Password"
                 value={formData.authPassword}
                 onChange={handleChange}
-                className="w-full pl-12 pr-12 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                className="w-full pl-12 pr-12 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all duration-300"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-green-400 transition-colors focus:outline-none"
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-zinc-500 hover:text-zinc-300 transition-colors focus:outline-none"
               >
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
-            </div>
-
-            {/* Location Fields: Country & Code */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Globe className="h-5 w-5 text-gray-400 group-focus-within:text-green-400 transition-colors" />
-                </div>
-                <select
-                  name="countryName"
-                  id="countryName"
-                  required
-                  value={formData.countryName}
-                  onChange={handleCountryChange}
-                  className="w-full pl-12 pr-10 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm appearance-none"
-                >
-                  <option value="" disabled className="text-gray-900">Select Country</option>
-                  {countries.map((c) => (
-                    <option key={c.code} value={c.name} className="text-gray-900">
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
-                </div>
-              </div>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Globe className="h-5 w-5 text-gray-400 group-focus-within:text-green-400 transition-colors" />
-                </div>
-                <input
-                  type="text"
-                  name="countryTelCode"
-                  id="countryTelCode"
-                  required
-                  placeholder="Code (+351)"
-                  value={formData.countryTelCode}
-                  onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
-                />
-              </div>
-            </div>
-
-            {/* Phone Number */}
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Phone className="h-5 w-5 text-gray-400 group-focus-within:text-green-400 transition-colors" />
-              </div>
-              <input
-                type="tel"
-                name="phoneNumber"
-                id="phoneNumber"
-                required
-                placeholder="Phone number"
-                value={formData.phoneNumber}
-                onChange={handleChange}
-                className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
-              />
             </div>
 
             {/* Sign Up Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 mt-6"
+              className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-lg text-black bg-white hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-white/20 disabled:opacity-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 mt-6"
             >
               {loading ? (
                 <span className="flex items-center gap-2">
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  <div className="animate-spin h-4 w-4 border-2 border-black/20 border-t-black rounded-full"></div>
                   Creating account...
                 </span>
               ) : (
@@ -252,9 +182,9 @@ export const Register: React.FC = () => {
           </form>
 
           {/* Sign In Link */}
-          <p className="mt-6 text-center text-sm text-gray-300">
+          <p className="mt-6 text-center text-sm text-zinc-400">
             Already have an account?{' '}
-            <Link to="/login" className="font-semibold text-green-400 hover:text-green-300 transition-colors">
+            <Link to="/login" className="font-semibold text-white hover:text-zinc-200 transition-colors">
               Sign in
             </Link>
           </p>

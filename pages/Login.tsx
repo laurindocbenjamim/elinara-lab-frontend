@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Mail, Github } from 'lucide-react';
+import { Lock, Mail } from 'lucide-react';
 
 // Declare Google type for TypeScript
 declare global {
@@ -21,7 +21,7 @@ export const Login: React.FC = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (status === 'AUTHENTICATED') {
-      navigate('/dashboard');
+      navigate('/agent');
     }
   }, [status, navigate]);
 
@@ -38,8 +38,8 @@ export const Login: React.FC = () => {
     try {
       const response = await authService.login(formData);
       if (response.success || response.access_token || response.status_code === 200) {
-        await login();
-        navigate('/dashboard');
+        await login(response.access_token || '');
+        navigate('/agent');
       } else {
         setError('Login failed. Please check your credentials.');
       }
@@ -55,24 +55,17 @@ export const Login: React.FC = () => {
   const handleGoogleLogin = () => {
     authService.googleLogin();
   };
-  // GitHub OAuth handler - redirects to backend
-  const handleGithubLogin = () => {
-    authService.githubLogin();
-  };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 animate-fade-in">
+    <div className="min-h-[100vh] flex items-center justify-center bg-[#050505] py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(30,58,138,0.08),transparent_60%)]" />
+      <div className="pointer-events-none absolute inset-0 opacity-20 mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+
+      <div className="max-w-md w-full space-y-8 animate-fade-in relative z-10">
         {/* Glass morphism card */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-2xl">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 mb-4">
-              <Lock className="h-6 w-6 text-white" />
-            </div>
-            <h2 className="text-3xl font-bold text-white">Welcome Back</h2>
-            <p className="mt-2 text-sm text-gray-300">
-              Sign in to access your dashboard
-            </p>
+        <div className="rounded-2xl p-8 border border-white/10 shadow-2xl backdrop-blur-xl bg-[rgba(10,10,12,0.6)]">
+          <div className="text-center -mb-3">
+            <h2 className="text-4xl font-bold tracking-tighter bg-gradient-to-br from-white to-zinc-500 bg-clip-text text-transparent">Elinara Labs</h2>
           </div>
 
           <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
@@ -85,14 +78,14 @@ export const Login: React.FC = () => {
             {/* Email/Username Input */}
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-blue-400 transition-colors" />
+                <Mail className="h-5 w-5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
               </div>
               <input
                 id="username"
                 name="username"
                 type="text"
                 required
-                className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all duration-300"
                 placeholder="Email or username"
                 value={formData.username}
                 onChange={handleChange}
@@ -102,14 +95,14 @@ export const Login: React.FC = () => {
             {/* Password Input */}
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-400 transition-colors" />
+                <Lock className="h-5 w-5 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
               </div>
               <input
                 id="password"
                 name="password"
                 type="password"
                 required
-                className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm"
+                className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-white/20 transition-all duration-300"
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
@@ -120,15 +113,15 @@ export const Login: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="w-full flex justify-center py-4 px-4 border border-transparent text-sm font-bold rounded-lg text-black bg-white hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-white/20 disabled:opacity-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 uppercase tracking-wider"
             >
               {loading ? (
                 <span className="flex items-center gap-2">
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                  Signing in...
+                  <div className="animate-spin h-4 w-4 border-2 border-black/20 border-t-black rounded-full"></div>
+                  INITIALIZING...
                 </span>
               ) : (
-                'Sign in'
+                'TOUCH THE FUTURE'
               )}
             </button>
           </form>
@@ -139,7 +132,7 @@ export const Login: React.FC = () => {
               <div className="w-full border-t border-white/10" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="px-2 bg-white/10 text-gray-300 backdrop-blur-sm">Or continue with</span>
+              <span className="px-2 bg-white/5 text-zinc-400">Or continue with</span>
             </div>
           </div>
 
@@ -149,7 +142,7 @@ export const Login: React.FC = () => {
             <button
               type="button"
               onClick={handleGoogleLogin}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 border border-white/20 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all duration-300 backdrop-blur-sm hover:scale-105 transform"
+              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 border border-white/10 rounded-lg bg-white/5 hover:bg-white/10 text-white text-sm font-medium transition-all duration-300"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -162,17 +155,8 @@ export const Login: React.FC = () => {
 
             <button
               type="button"
-              onClick={handleGithubLogin}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 border border-white/20 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all duration-300 backdrop-blur-sm hover:scale-105 transform"
-            >
-              <Github className="h-5 w-5" />
-              <span>GitHub</span>
-            </button>
-
-            <button
-              type="button"
               onClick={() => authService.microsoftLogin()}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 border border-white/20 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all duration-300 backdrop-blur-sm hover:scale-105 transform"
+              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 border border-white/10 rounded-lg bg-white/5 hover:bg-white/10 text-white text-sm font-medium transition-all duration-300"
             >
               <svg className="h-5 w-5" viewBox="0 0 23 23" fill="currentColor">
                 <path fill="#f35325" d="M1 1h10v10H1z" />
@@ -185,9 +169,9 @@ export const Login: React.FC = () => {
           </div>
 
           {/* Sign Up Link */}
-          <p className="mt-6 text-center text-sm text-gray-300">
+          <p className="mt-6 text-center text-sm text-zinc-400">
             Don't have an account?{' '}
-            <Link to="/register" className="font-semibold text-cyan-400 hover:text-cyan-300 transition-colors">
+            <Link to="/register" className="font-semibold text-white hover:text-zinc-200 transition-colors">
               Create one
             </Link>
           </p>

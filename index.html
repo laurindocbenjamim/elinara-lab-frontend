@@ -7,10 +7,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ElinaraLab | Secure Cloud Platform</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-    as="style">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-    rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <!-- Google OAuth 2.0 Library -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script>
@@ -20,6 +19,7 @@
         extend: {
           fontFamily: {
             sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
           },
           colors: {
             primary: {
@@ -57,6 +57,8 @@
   <style>
     body {
       font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     /* Smooth transitions */
@@ -105,52 +107,6 @@
     .gradient-animate {
       background-size: 200% 200%;
       animation: gradientShift 3s ease infinite;
-    }
-
-    /* Black Theme Utility */
-    .black body {
-      background-color: #000000 !important;
-      color: #ffffff !important;
-    }
-
-    .black aside, 
-    .black nav,
-    .black .bg-white,
-    .black .bg-gray-50,
-    .black .bg-gray-100 {
-      background-color: #000000 !important;
-      border-color: #333333 !important;
-    }
-
-    .black .text-gray-900,
-    .black .text-gray-800,
-    .black .text-gray-700,
-    .black .text-gray-600 {
-      color: #ffffff !important;
-    }
-
-    .black .text-gray-500,
-    .black .text-gray-400 {
-      color: #a1a1aa !important;
-    }
-
-    .black .border-gray-100,
-    .black .border-gray-200,
-    .black .border-gray-300 {
-      border-color: #27272a !important;
-    }
-
-    .black .hover\:bg-gray-50:hover,
-    .black .hover\:bg-gray-100:hover {
-      background-color: #18181b !important;
-    }
-    
-    .black select,
-    .black input,
-    .black textarea {
-      background-color: #0c0c0c !important;
-      border-color: #27272a !important;
-      color: white !important;
     }
   </style>
   <script type="importmap">
