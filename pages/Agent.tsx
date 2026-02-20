@@ -27,23 +27,28 @@ import {
     Search
 } from 'lucide-react';
 import { agentService, processesService, dataSourcesService, configService } from '../services/api';
-import { AgentStatus, Process, DataSource, DataSourceCreateRequest } from '../types';
+import { AgentStatus, Process, DataSource, DataSourceCreateRequest, AgentSettings } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useParams, useLocation, Link, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { DeleteAgentModal } from '../components/DeleteAgentModal';
 import { emitEvent, EVENTS } from '../services/events';
-
+import { useAgentMonitoring } from '../hooks/useAgentMonitoring';
 
 export const Agent: React.FC = () => {
     const { processId } = useParams<{ processId: string }>();
     const navigate = useNavigate();
     const location = useLocation();
     const { user } = useAuth();
-    const { socket, isConnected } = useSocket();
+    const { socket, isConnected, events: globalEvents } = useSocket();
+    const monitorData = useAgentMonitoring(user?.id, processId);
+
+    // Filter global events for this agent
+    const events = globalEvents.filter(e => String(e.agent_id) === String(processId) || !e.agent_id);
 
     // UI State
     const [agentLiveStatus, setAgentLiveStatus] = useState<AgentStatus | null>(null);
+    const [agentSettings, setAgentSettings] = useState<AgentSettings | null>(null);
     const [currentProcess, setCurrentProcess] = useState<Process | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [llmModel, setLlmModel] = useState('gemini-1.5-pro');
@@ -73,10 +78,6 @@ export const Agent: React.FC = () => {
 
     const [jobProgress, setJobProgress] = useState<Record<string, { current: number, total: number, percentage: number, status: string }>>(INITIAL_JOB_PROGRESS);
 
-    const [events, setEvents] = useState<Array<{ id: number, time: string, name: string, source: string, status: string }>>([
-        { id: 1, time: new Date().toLocaleTimeString(), name: 'System Initialized', source: 'Orchestrator', status: 'success' }
-    ]);
-
     // Delete Agent State
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -87,7 +88,6 @@ export const Agent: React.FC = () => {
         setAgentLiveStatus(null);
         setCurrentProcess(null);
         setDataSources([]);
-        setEvents([{ id: Date.now(), time: new Date().toLocaleTimeString(), name: 'Agent Context Switched', source: 'Orchestrator', status: 'success' }]);
     }, [processId]);
 
     const handleDeleteAgent = async () => {
@@ -144,6 +144,7 @@ export const Agent: React.FC = () => {
             const [agentStatusResult, , process, configSettings] = await Promise.all(promises);
 
             setAgentLiveStatus(agentStatusResult);
+            setAgentSettings(configSettings);
             // Prioritize llm_model from unified config, fallback to gemini-1.5-pro
             setLlmModel(configSettings?.llm_model || agentStatusResult?.selected_model || 'gemini-1.5-pro');
 
@@ -192,87 +193,6 @@ export const Agent: React.FC = () => {
     useEffect(() => {
         fetchAgentData();
     }, [fetchAgentData]);
-
-    // Countdown State
-    const [countdown, setCountdown] = useState<{ remaining: number, next_run: string } | null>(null);
-
-    // Socket.io Integration
-    useEffect(() => {
-        if (!socket || !isConnected || !user || !processId) return;
-
-        // Join specific agent and user rooms for granular tracking
-        const agentRoom = `agent_${processId}`;
-        const userRoom = `user_${user.id}`;
-
-        console.log(`Joining rooms: ${agentRoom}, ${userRoom}`);
-        socket.emit('join', { room: agentRoom });
-        socket.emit('join', { room: userRoom });
-
-        const handleAgentStatus = (data: any) => {
-            if (String(data.agent_id) === String(processId)) {
-                setAgentLiveStatus(prev => prev ? { ...prev, agent_status: data.status } : null);
-                setCurrentProcess(prev => prev ? {
-                    ...prev,
-                    status: data.status === 'active' ? 'running' :
-                        data.status === 'stopped' ? 'completed' :
-                            prev.status
-                } : null);
-            }
-        };
-
-        const handlePipelineUpdate = (data: any) => {
-            // Strict filtering by process_id
-            const isTargetProcess = String(data.process_id) === String(processId);
-
-            if (isTargetProcess && data.pipeline) {
-                console.log(`Pipeline Update for Agent ${data.process_id}:`, data.pipeline);
-                setJobProgress(data.pipeline);
-
-                // Find the latest active/completed stage to log as an event
-                const stages = Object.entries(data.pipeline);
-                const activeStage = [...stages].reverse().find(([_, info]: [any, any]) => info.status === 'tracking' || info.status === 'completed');
-
-                if (activeStage) {
-                    const [key, info]: [string, any] = activeStage;
-                    setEvents(prev => {
-                        // Avoid duplicates for the same stage/status
-                        if (prev.length > 0 && prev[0].name === `Stage: ${key}` && prev[0].status === info.status) {
-                            return prev;
-                        }
-                        return [{
-                            id: Date.now(),
-                            time: new Date().toLocaleTimeString(),
-                            name: `Stage: ${key}`,
-                            source: 'Agent Pipeline',
-                            status: info.status === 'error' ? 'error' : 'success'
-                        }, ...prev].slice(0, 20);
-                    });
-                }
-            }
-        };
-
-        const handleAgentCountdown = (data: any) => {
-            if (String(data.process_id) === String(processId) || data.process_id === 'default') {
-                console.log(`Agent ${data.process_id} countdown: ${data.remaining_seconds}s`);
-                setCountdown({
-                    remaining: data.remaining_seconds,
-                    next_run: data.next_run
-                });
-            }
-        };
-
-        socket.on('agent_status', handleAgentStatus);
-        socket.on('pipeline_update', handlePipelineUpdate);
-        socket.on('agent_countdown', handleAgentCountdown);
-
-        return () => {
-            socket.off('agent_status', handleAgentStatus);
-            socket.off('pipeline_update', handlePipelineUpdate);
-            socket.off('agent_countdown', handleAgentCountdown);
-            socket.emit('leave', { room: agentRoom });
-            socket.emit('leave', { room: userRoom });
-        };
-    }, [socket, isConnected, user, processId]);
 
     const handleResetFormData = () => {
         setFormDataGroups([
@@ -323,11 +243,11 @@ export const Agent: React.FC = () => {
         const updatedConfig = [...updatedGroups[index].config];
         updatedConfig[0][field] = value;
         updatedGroups[index].config = updatedConfig;
-        
+
         if (field === 'name') {
             updatedGroups[index].resource_name = value;
         }
-        
+
         setFormDataGroups(updatedGroups);
     };
 
@@ -468,8 +388,10 @@ export const Agent: React.FC = () => {
     );
 
     const JobTracker = ({ label, icon: Icon, stageKey, color }: { label: string, icon: any, stageKey: string, color: 'blue' | 'cyan' | 'indigo' | 'orange' | 'purple' | 'green' }) => {
-        const data = jobProgress[stageKey] || { current: 0, total: 1, percentage: 0, status: 'pending' };
-        const { current, total, percentage, status } = data;
+        const data = monitorData.pipeline[stageKey] || jobProgress[stageKey] || { current: 0, total: 1, percentage: 0, status: 'pending' };
+        const { current, total, percentage, status, label: backendLabel } = data;
+
+        const displayLabel = backendLabel || label;
 
         const colorClasses = {
             blue: { text: 'text-blue-500', bg: 'bg-blue-500', border: 'border-blue-500/50', light: 'text-blue-400' },
@@ -490,7 +412,7 @@ export const Agent: React.FC = () => {
                             <Icon className={`h-4 w-4 ${status === 'completed' ? theme.text : status === 'tracking' ? `${theme.light} animate-pulse` : status === 'error' ? 'text-red-500' : 'text-gray-700'}`} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest">{label}</p>
+                            <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest">{displayLabel}</p>
                             <p className="text-sm font-black text-white">{current} / {total} <span className="text-gray-600">Tasks</span></p>
                         </div>
                     </div>
@@ -610,32 +532,50 @@ export const Agent: React.FC = () => {
                 {/* Main Dashboard Panel */}
                 <div className="md:col-span-8 bg-black dark:bg-[#0A0A0A] shadow-2xl rounded-[2.5rem] border border-gray-800 overflow-hidden relative group">
                     <div className="p-8 space-y-8">
-                        <div className="flex justify-between items-start">
+                        <div className="flex flex-wrap justify-between items-start gap-4">
                             <div>
                                 <h3 className="text-[10px] font-black text-primary-500 uppercase tracking-[0.3em] mb-1">Live Execution Tracker</h3>
                                 <p className="text-xl font-black text-white uppercase tracking-tighter">ELT Agent Pipeline</p>
                             </div>
-                            <div className="flex items-center gap-4">
+                            <div className="flex flex-wrap items-center gap-4">
                                 <div className="text-right">
-                                    <p className="text-[10px] font-black text-gray-500 uppercase">Model</p>
+                                    <p className="text-[10px] font-black text-gray-500 uppercase">Model / Provider</p>
                                     <p className="text-sm font-black text-white uppercase tracking-tighter">
-                                        {llmModel}
+                                        {monitorData.model !== "N/A" ? monitorData.model : llmModel}
+                                        {monitorData.provider !== "N/A" && <span className="text-primary-500 ml-1">({monitorData.provider})</span>}
                                     </p>
                                 </div>
-                                <div className="h-10 w-px bg-gray-800"></div>
+                                <div className="h-10 w-px bg-gray-800 hidden sm:block"></div>
                                 <div className="text-right">
                                     <p className="text-[10px] font-black text-gray-500 uppercase">Socket</p>
                                     <p className={`text-sm font-black ${isConnected ? 'text-green-500' : 'text-red-500'}`}>
                                         {isConnected ? 'ONLINE' : 'OFFLINE'}
                                     </p>
                                 </div>
-                                {countdown && countdown.remaining > 0 && (
+
+                                {monitorData.countdown !== null && (
                                     <>
-                                        <div className="h-10 w-px bg-gray-800"></div>
+                                        <div className="h-10 w-px bg-gray-800 hidden sm:block"></div>
                                         <div className="text-right animate-in fade-in slide-in-from-right duration-500">
-                                            <p className="text-[10px] font-black text-primary-500 uppercase">Next Run</p>
+                                            <p className="text-[10px] font-black text-primary-500 uppercase">
+                                                {monitorData.mode === 'interval' ? 'Next Interval' : 'Next Run'}
+                                            </p>
                                             <p className="text-sm font-black text-white tabular-nums">
-                                                {Math.floor(countdown.remaining / 60)}m {countdown.remaining % 60}s
+                                                {`${Math.floor(monitorData.countdown / 60)}m ${monitorData.countdown % 60}s`}
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
+
+                                {agentSettings?.execution_mode && agentSettings.execution_mode !== 'manual' && (
+                                    <>
+                                        <div className="h-10 w-px bg-gray-800 hidden sm:block"></div>
+                                        <div className="text-right">
+                                            <p className="text-[10px] font-black text-gray-500 uppercase">Schedule</p>
+                                            <p className="text-sm font-black text-white">
+                                                {agentSettings.execution_mode === 'interval'
+                                                    ? `${agentSettings.execution_interval}s`
+                                                    : agentSettings.scheduled_time || 'N/A'}
                                             </p>
                                         </div>
                                     </>

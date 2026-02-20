@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { config } from '../config';
+import { Socket } from 'socket.io-client';
+import { socket as sharedSocket } from '../services/socket';
 
 import { AgentTask, AgentAction } from '../types';
 
@@ -9,16 +9,26 @@ interface PipelineStage {
     total: number;
     percentage: number;
     status: string;
+    label?: string;
+}
+
+export interface AgentState {
+    pipeline: Record<string, PipelineStage>;
+    model: string;
+    provider: string;
+    status: string;
+    countdown: number | null;
+    mode: string;
+    lastUpdate: number;
 }
 
 interface SocketContextType {
     socket: Socket | null;
     isConnected: boolean;
     events: any[];
-    pipelineUpdates: Record<string, Record<string, PipelineStage>>;
+    agentStates: Record<string, AgentState>;
     tasks: AgentTask[];
     actions: AgentAction[];
-    countdown: Record<string, { remaining: number; next_run: string }>;
     clearEvents: () => void;
 }
 
@@ -26,10 +36,9 @@ const SocketContext = createContext<SocketContextType>({
     socket: null,
     isConnected: false,
     events: [],
-    pipelineUpdates: {},
+    agentStates: {},
     tasks: [],
     actions: [],
-    countdown: {},
     clearEvents: () => { },
 });
 
@@ -45,59 +54,67 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
     // Global Persistent States
     const [events, setEvents] = useState<any[]>([]);
-    const [pipelineUpdates, setPipelineUpdates] = useState<Record<string, Record<string, PipelineStage>>>({});
+    const [agentStates, setAgentStates] = useState<Record<string, AgentState>>({});
     const [tasks, setTasks] = useState<AgentTask[]>([]);
     const [actions, setActions] = useState<AgentAction[]>([]);
-    const [countdown, setCountdown] = useState<Record<string, { remaining: number; next_run: string }>>({});
 
     const clearEvents = () => setEvents([]);
 
-    useEffect(() => {
-        // Log connection attempt
-        console.log(`Socket.io: Attempting connection to ${config.SOCKET_URL} with path /api/socket.io`);
-
-        const socketInstance = io(config.SOCKET_URL, {
-            path: '/api/socket.io',
-            withCredentials: true,
-            transports: ['websocket', 'polling'], // Prioritize websocket
-            autoConnect: true,
-            reconnection: true,
-            reconnectionAttempts: 10,
-            reconnectionDelay: 2000,
-            timeout: 20000,
+    const updateAgentState = (agentId: string, updates: Partial<AgentState>) => {
+        setAgentStates(prev => {
+            const current = prev[agentId] || {
+                pipeline: {},
+                model: "N/A",
+                provider: "N/A",
+                status: "idle",
+                countdown: null,
+                mode: "manual",
+                lastUpdate: Date.now()
+            };
+            return {
+                ...prev,
+                [agentId]: { ...current, ...updates, lastUpdate: Date.now() }
+            };
         });
+    };
 
-        socketInstance.on('connect', () => {
+    useEffect(() => {
+        setSocket(sharedSocket);
+
+        if (sharedSocket.connected) {
+            setIsConnected(true);
+        }
+
+        sharedSocket.on('connect', () => {
             console.log('Socket.io connected successfully');
             setIsConnected(true);
         });
 
-        socketInstance.on('disconnect', (reason) => {
+        sharedSocket.on('disconnect', (reason) => {
             console.log('Socket.io disconnected:', reason);
             setIsConnected(false);
             if (reason === 'io server disconnect') {
-                // The disconnection was initiated by the server, you need to reconnect manually
-                socketInstance.connect();
+                sharedSocket.connect();
             }
         });
 
-        socketInstance.on('connect_error', (error) => {
+        sharedSocket.on('connect_error', (error) => {
             console.error('Socket.io connection error:', error);
-            // Some specific logging for common errors
             if (error.message === 'xhr poll error') {
-                console.warn('Socket.io: XHR poll error. This often means the server is down or the path /api/socket.io is incorrect.');
+                console.warn('Socket.io: XHR poll error.');
             }
         });
 
         // Pipeline Updates
-        socketInstance.on('pipeline_update', (data: any) => {
+        sharedSocket.on('pipeline_update', (data: any) => {
             if (data.process_id && data.pipeline) {
-                setPipelineUpdates(prev => ({
-                    ...prev,
-                    [String(data.process_id)]: data.pipeline
-                }));
+                const agentId = String(data.process_id);
+                updateAgentState(agentId, {
+                    pipeline: data.pipeline,
+                    model: data.model || undefined,
+                    provider: data.provider || undefined
+                });
 
-                // Logic to push to events log if it's a significant change
                 const stages = Object.entries(data.pipeline);
                 const activeStage = [...stages].reverse().find(([_, info]: [any, any]) =>
                     info.status === 'tracking' || info.status === 'completed' || info.status === 'error'
@@ -106,25 +123,38 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
                 if (activeStage) {
                     const [key, info]: [string, any] = activeStage;
                     setEvents(prev => {
-                        // Avoid immediate duplicates for same stage/status
-                        if (prev.length > 0 && prev[0].name === `Stage: ${key}` && prev[0].status === info.status && prev[0].agent_id === String(data.process_id)) {
+                        if (prev.length > 0 && prev[0].name === `Stage: ${key}` && prev[0].status === info.status && prev[0].agent_id === agentId) {
                             return prev;
                         }
                         return [{
                             id: Date.now(),
-                            agent_id: String(data.process_id),
+                            agent_id: agentId,
                             time: new Date().toLocaleTimeString(),
                             name: `Stage: ${key}`,
                             source: 'Agent Pipeline',
                             status: info.status === 'error' ? 'error' : 'success'
-                        }, ...prev].slice(0, 50); // Keep more events globally
+                        }, ...prev].slice(0, 50);
                     });
                 }
             }
         });
 
+        // Agent Status/Update
+        const handleAgentUpdate = (data: any) => {
+            const agentId = String(data.process_id || data.agent_id);
+            if (agentId && agentId !== "undefined") {
+                updateAgentState(agentId, {
+                    status: data.status || data.agent_status,
+                    model: data.model,
+                    provider: data.provider
+                });
+            }
+        };
+        sharedSocket.on('agent_update', handleAgentUpdate);
+        sharedSocket.on('agent_status', handleAgentUpdate);
+
         // Task Updates
-        socketInstance.on('task_update', (updatedTask: AgentTask) => {
+        sharedSocket.on('task_update', (updatedTask: AgentTask) => {
             setTasks((prevTasks) => {
                 const index = prevTasks.findIndex((t) => t.id === updatedTask.id);
                 if (index !== -1) {
@@ -135,7 +165,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
                 return [updatedTask, ...prevTasks];
             });
 
-            // Log as event too
             setEvents(prev => [{
                 id: Date.now(),
                 time: new Date().toLocaleTimeString(),
@@ -147,28 +176,24 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         });
 
         // Agent Actions (LLM Thoughts/Actions)
-        socketInstance.on('agent_action', (newAction: AgentAction) => {
+        sharedSocket.on('agent_action', (newAction: AgentAction) => {
             setActions(prev => [newAction, ...prev].slice(0, 100));
         });
 
         // Agent Countdown
-        socketInstance.on('agent_countdown', (data: any) => {
-            if (data.process_id) {
-                setCountdown(prev => ({
-                    ...prev,
-                    [String(data.process_id)]: {
-                        remaining: data.remaining_seconds,
-                        next_run: data.next_run
-                    }
-                }));
+        sharedSocket.on('agent_countdown', (data: any) => {
+            const agentId = String(data.process_id);
+            if (agentId && agentId !== "undefined") {
+                updateAgentState(agentId, {
+                    countdown: data.remaining_seconds,
+                    mode: data.mode,
+                    model: data.model
+                });
             }
         });
 
-        setSocket(socketInstance);
-
         return () => {
-            socketInstance.removeAllListeners();
-            socketInstance.disconnect();
+            // Cleanup listeners omitted for persistence
         };
     }, []);
 
@@ -176,10 +201,9 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         socket,
         isConnected,
         events,
-        pipelineUpdates,
+        agentStates,
         tasks,
         actions,
-        countdown,
         clearEvents
     };
 
