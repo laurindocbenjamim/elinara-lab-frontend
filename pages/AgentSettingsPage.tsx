@@ -34,6 +34,7 @@ export const AgentSettingsPage: React.FC = () => {
     const [llmProvider, setLlmProvider] = useState('Gemini');
     const [llmModel, setLlmModel] = useState('gemini-1.5-pro');
 
+
     useEffect(() => {
         if (processId) {
             fetchData();
@@ -79,7 +80,6 @@ export const AgentSettingsPage: React.FC = () => {
         e.preventDefault();
         setSaving(true);
         setMessage(null);
-
         try {
             await configService.update(processId!, {
                 alert_emails: alertEmails,
@@ -90,7 +90,7 @@ export const AgentSettingsPage: React.FC = () => {
                 llm_model: llmModel
             });
 
-            setMessage({ type: 'success', text: 'Settings saved successfully!' });
+            setMessage({ type: 'success', text: 'Settings saved and synchronized successfully!' });
             setIsEditable(false);
         } catch (err: any) {
             setMessage({ type: 'error', text: err.message || 'Failed to save settings.' });
@@ -297,6 +297,7 @@ export const AgentSettingsPage: React.FC = () => {
                         </p>
                     </div>
                 </div>
+
 
                 {/* Notifications Card */}
                 <div className="bg-white dark:bg-[#0A0A0A] shadow-xl rounded-[2.5rem] border border-gray-100 dark:border-gray-800 overflow-hidden transition-all hover:border-primary-500/20">

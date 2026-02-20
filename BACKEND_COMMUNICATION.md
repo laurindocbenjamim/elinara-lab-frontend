@@ -169,10 +169,25 @@ The application uses Socket.io for real-time monitoring of agent execution.
 {
   "id": "mongo_id_string",
   "process_id": "agent_id_string",
-  "platform": "google_drive", 
-  "resource_identifier": "folder_id_or_api_name",
-  "resource_name": "Friendly Name",
-  "config": []
+  "platform": "external_api", 
+  "resource_identifier": "portugal_2030_api",
+  "resource_name": "Portugal 2030 Search",
+  "config": [
+    {
+      "name": "Portugal 2030",
+      "query_url": "https://portugal2030.pt/wp-json/avisos/query",
+      "download_url": "https://portugal2030.pt/wp-json/avisos/download",
+      "payload": {
+        "estadoAvisoId": 7,
+        "programaId": 0,
+        "fundoId": 0,
+        "naturezaAvisoId": 0,
+        "tipoPromotorId": 0,
+        "sortOrder": "desc",
+        "page": 0
+      }
+    }
+  ]
 }
 ```
 

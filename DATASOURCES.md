@@ -16,11 +16,28 @@ Creates a new data source.
 - **Body**:
   ```json
   {
-    "process_id": "default",
-    "platform": "google_drive",
-    "resource_identifier": "project_alpha",
-    "config": [ ... ]
-  }
+  "id": "mongo_id_string",
+  "process_id": "agent_id_string",
+  "platform": "external_api", 
+  "resource_identifier": "portugal_2030_api",
+  "resource_name": "Portugal 2030 Search",
+  "config": [
+    {
+      "name": "Portugal 2030",
+      "query_url": "https://portugal2030.pt/wp-json/avisos/query",
+      "download_url": "https://portugal2030.pt/wp-json/avisos/download",
+      "payload": {
+        "estadoAvisoId": 7,
+        "programaId": 0,
+        "fundoId": 0,
+        "naturezaAvisoId": 0,
+        "tipoPromotorId": 0,
+        "sortOrder": "desc",
+        "page": 0
+      }
+    }
+  ]
+}
   ```
 - **Response**: `{"msg": "Data source created", "id": "<mongo_id>"}` (Status 201)
 
@@ -62,12 +79,17 @@ The `config` field must be an array of objects with the following structure:
 ```json
 [
   {
-    "name": "string",
-    "query_url": "string",
-    "download_url": "string",
+    "name": "Portugal 2030",
+    "query_url": "https://portugal2030.pt/wp-json/avisos/query",
+    "download_url": "https://portugal2030.pt/wp-json/avisos/download",
     "payload": {
-      "estadoAvisoId": number,
-      "page": number
+      "estadoAvisoId": 7,
+      "programaId": 0,
+      "fundoId": 0,
+      "naturezaAvisoId": 0,
+      "tipoPromotorId": 0,
+      "sortOrder": "desc",
+      "page": 0
     }
   }
 ]

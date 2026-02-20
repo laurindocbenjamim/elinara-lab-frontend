@@ -23,7 +23,8 @@ import {
     Trash,
     ListTodo,
     Link as LinkIcon,
-    AlertTriangle
+    AlertTriangle,
+    Search
 } from 'lucide-react';
 import { agentService, processesService, dataSourcesService, configService } from '../services/api';
 import { AgentStatus, Process, DataSource, DataSourceCreateRequest } from '../types';
@@ -58,7 +59,6 @@ export const Agent: React.FC = () => {
     const [formDataGroups, setFormDataGroups] = useState<DataSourceCreateRequest[]>([
         { platform: 'google_drive', resource_identifier: '', resource_name: '', resource_format: '', config: [] }
     ]);
-    const [showConfig, setShowConfig] = useState<boolean[]>([false]);
     const [showName, setShowName] = useState<boolean[]>([false]);
 
     // Real-time Pipeline State (Updated to MONITORING_API.md spec)
@@ -107,11 +107,16 @@ export const Agent: React.FC = () => {
 
     const DEFAULT_CONFIG = [
         {
-            "name": "",
-            "query_url": "",
-            "download_url": "",
+            "name": "Portugal 2030",
+            "query_url": "https://portugal2030.pt/wp-json/avisos/query",
+            "download_url": "https://portugal2030.pt/wp-json/avisos/download",
             "payload": {
-                "estadoAvisoId": 0,
+                "estadoAvisoId": 7,
+                "programaId": 0,
+                "fundoId": 0,
+                "naturezaAvisoId": 0,
+                "tipoPromotorId": 0,
+                "sortOrder": "desc",
                 "page": 0
             }
         }
@@ -165,7 +170,7 @@ export const Agent: React.FC = () => {
 
                     if (newGroups.length > 0) {
                         setFormDataGroups(newGroups);
-                        setShowConfig(new Array(newGroups.length).fill(false));
+                        setShowName(new Array(newGroups.length).fill(true));
                         setShowName(new Array(newGroups.length).fill(true));
                         setShowDataSourceModal(true);
                     }
@@ -273,7 +278,6 @@ export const Agent: React.FC = () => {
         setFormDataGroups([
             { platform: 'google_drive', resource_identifier: '', resource_name: '', resource_format: '', config: [] }
         ]);
-        setShowConfig([false]);
         setShowName([false]);
         setEditingSourceId(null);
     };
@@ -286,11 +290,44 @@ export const Agent: React.FC = () => {
             } catch (e) {
                 (updatedGroups[index] as any).configRaw = value;
             }
+        } else if (field === 'platform' && value === 'external_api') {
+            updatedGroups[index].platform = value;
+            if (!updatedGroups[index].config || updatedGroups[index].config.length === 0) {
+                updatedGroups[index].config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+            }
         } else if (field === 'identifier') {
             updatedGroups[index].resource_identifier = value;
         } else {
             (updatedGroups[index] as any)[field === 'name' ? 'resource_name' : field === 'format' ? 'resource_format' : field] = value;
         }
+        setFormDataGroups(updatedGroups);
+    };
+
+    const handleConfigPayloadChange = (index: number, field: string, value: any) => {
+        const updatedGroups = [...formDataGroups];
+        if (!updatedGroups[index].config || updatedGroups[index].config.length === 0) {
+            updatedGroups[index].config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        }
+        const updatedConfig = [...updatedGroups[index].config];
+        if (!updatedConfig[0].payload) updatedConfig[0].payload = {};
+        updatedConfig[0].payload[field] = value;
+        updatedGroups[index].config = updatedConfig;
+        setFormDataGroups(updatedGroups);
+    };
+
+    const handleConfigTopLevelFieldChange = (index: number, field: string, value: any) => {
+        const updatedGroups = [...formDataGroups];
+        if (!updatedGroups[index].config || updatedGroups[index].config.length === 0) {
+            updatedGroups[index].config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        }
+        const updatedConfig = [...updatedGroups[index].config];
+        updatedConfig[0][field] = value;
+        updatedGroups[index].config = updatedConfig;
+        
+        if (field === 'name') {
+            updatedGroups[index].resource_name = value;
+        }
+        
         setFormDataGroups(updatedGroups);
     };
 
@@ -300,33 +337,31 @@ export const Agent: React.FC = () => {
         setShowName(updatedShow);
     };
 
-    const toggleConfig = (index: number) => {
-        const updatedShow = [...showConfig];
-        updatedShow[index] = !updatedShow[index];
-        setShowConfig(updatedShow);
-
-        if (updatedShow[index] && formDataGroups[index].config.length === 0) {
-            const updatedGroups = [...formDataGroups];
-            updatedGroups[index].config = DEFAULT_CONFIG;
-            setFormDataGroups(updatedGroups);
-        }
-    };
-
     const handleAddGroup = () => {
         setFormDataGroups([...formDataGroups, { platform: 'google_drive', resource_identifier: '', resource_name: '', resource_format: '', config: [] }]);
-        setShowConfig([...showConfig, false]);
         setShowName([...showName, false]);
     };
 
     const handleRemoveGroup = (index: number) => {
         if (formDataGroups.length <= 1) return;
         setFormDataGroups(formDataGroups.filter((_, i) => i !== index));
-        setShowConfig(showConfig.filter((_, i) => i !== index));
         setShowName(showName.filter((_, i) => i !== index));
     };
 
     const handleSaveDataSources = async () => {
         if (!processId) return;
+
+        // Validation for Rest API
+        for (const group of formDataGroups) {
+            if (group.platform === 'external_api') {
+                const config = group.config?.[0];
+                if (!config?.name || !config?.query_url || !config?.download_url) {
+                    setMessage({ type: 'error', text: 'Please fill in all required API fields (Name, Query URL, Download URL)' });
+                    return;
+                }
+            }
+        }
+
         setIsLoadingSavingDataSource(true);
         try {
             const metadata = {
@@ -394,7 +429,6 @@ export const Agent: React.FC = () => {
             resource_format: source.resource_format,
             config: source.config || []
         }]);
-        setShowConfig([!!(source.config && source.config.length > 0)]);
         setShowDataSourceModal(true);
     };
 
@@ -717,7 +751,9 @@ export const Agent: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-bold truncate max-w-xs">{source.resource_name || 'Unnamed Resource'}</span>
+                                            <span className="text-sm font-bold truncate max-w-xs">
+                                                {source.platform === 'external_api' ? (source.config?.[0]?.name || source.resource_name || 'Unnamed Resource') : (source.resource_name || 'Unnamed Resource')}
+                                            </span>
                                             <span className="text-[10px] text-gray-400 font-mono truncate max-w-[200px]">{source.resource_identifier}</span>
                                         </div>
                                     </td>
@@ -808,22 +844,153 @@ export const Agent: React.FC = () => {
                                                     </div>
                                                 )}
 
-                                                {!showConfig[idx] ? (
-                                                    <button onClick={() => toggleConfig(idx)} className="text-[8px] font-black text-primary-600 uppercase block">+ Add JSON Config</button>
-                                                ) : (
-                                                    <div>
-                                                        <div className="flex justify-between items-center mb-2">
-                                                            <label className="block text-[8px] font-black text-gray-400 uppercase tracking-widest">Configuration Payload</label>
-                                                            <button onClick={() => toggleConfig(idx)}><X className="h-3 w-3 text-gray-400" /></button>
+                                                {group.platform === 'external_api' && (
+                                                    <div className="space-y-6 animate-in slide-in-from-top-2 duration-300">
+                                                        {/* API Core Config */}
+                                                        <div className="bg-gray-50 dark:bg-black/20 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-4">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <Database className="h-3 w-3 text-primary-500" />
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Core API Configuration</label>
+                                                            </div>
+                                                            <div className="grid grid-cols-1 gap-4">
+                                                                <div>
+                                                                    <label className="block text-[8px] font-black text-gray-400 uppercase mb-1">Source Name <span className="text-red-500">*</span></label>
+                                                                    <input
+                                                                        type="text"
+                                                                        required
+                                                                        value={group.config?.[0]?.name || ''}
+                                                                        onChange={(e) => handleConfigTopLevelFieldChange(idx, 'name', e.target.value)}
+                                                                        placeholder="e.g., Portugal 2030"
+                                                                        className="w-full bg-white dark:bg-gray-800 border-gray-200 rounded-lg px-3 py-2 text-xs font-medium"
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-[8px] font-black text-gray-400 uppercase mb-1">Query URL <span className="text-red-500">*</span></label>
+                                                                    <input
+                                                                        type="url"
+                                                                        required
+                                                                        value={group.config?.[0]?.query_url || ''}
+                                                                        onChange={(e) => handleConfigTopLevelFieldChange(idx, 'query_url', e.target.value)}
+                                                                        placeholder="https://api.example.com/query"
+                                                                        className="w-full bg-white dark:bg-gray-800 border-gray-200 rounded-lg px-3 py-2 text-xs font-medium"
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-[8px] font-black text-gray-400 uppercase mb-1">Download URL <span className="text-red-500">*</span></label>
+                                                                    <input
+                                                                        type="url"
+                                                                        required
+                                                                        value={group.config?.[0]?.download_url || ''}
+                                                                        onChange={(e) => handleConfigTopLevelFieldChange(idx, 'download_url', e.target.value)}
+                                                                        placeholder="https://api.example.com/download"
+                                                                        className="w-full bg-white dark:bg-gray-800 border-gray-200 rounded-lg px-3 py-2 text-xs font-medium"
+                                                                    />
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <textarea
-                                                            value={typeof group.config === 'object' ? JSON.stringify(group.config, null, 2) : (group as any).configRaw || ''}
-                                                            onChange={(e) => handleDataSourceFieldChange(idx, 'config', e.target.value)}
-                                                            rows={4}
-                                                            className="w-full bg-white dark:bg-gray-800 border-gray-200 rounded-xl px-4 py-3 text-[10px] font-mono"
-                                                        />
+
+                                                        {/* Search Filters */}
+                                                        <div className="bg-primary-500/5 p-4 rounded-2xl border border-primary-500/10 space-y-4">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <Search className="h-3 w-3 text-primary-500" />
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Discovery Filters</label>
+                                                            </div>
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                <div>
+                                                                    <label className="block text-[8px] font-black text-gray-400 uppercase mb-1">Estado</label>
+                                                                    <select
+                                                                        value={group.config?.[0]?.payload?.estadoAvisoId || 7}
+                                                                        onChange={(e) => handleConfigPayloadChange(idx, 'estadoAvisoId', parseInt(e.target.value))}
+                                                                        className="w-full bg-white dark:bg-gray-800 border-gray-100 rounded-lg px-3 py-2 text-[10px] font-bold"
+                                                                    >
+                                                                        <option value={7}>Aberto</option>
+                                                                        <option value={6}>Agendado</option>
+                                                                        <option value={8}>Fechado</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-[8px] font-black text-gray-400 uppercase mb-1">Ordenação</label>
+                                                                    <select
+                                                                        value={group.config?.[0]?.payload?.sortOrder || 'desc'}
+                                                                        onChange={(e) => handleConfigPayloadChange(idx, 'sortOrder', e.target.value)}
+                                                                        className="w-full bg-white dark:bg-gray-800 border-gray-100 rounded-lg px-3 py-2 text-[10px] font-bold"
+                                                                    >
+                                                                        <option value="desc">Recente</option>
+                                                                        <option value="asc">Antigo</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div className="col-span-2">
+                                                                    <label className="block text-[8px] font-black text-gray-400 uppercase mb-1">Programa</label>
+                                                                    <select
+                                                                        value={group.config?.[0]?.payload?.programaId || 0}
+                                                                        onChange={(e) => handleConfigPayloadChange(idx, 'programaId', parseInt(e.target.value))}
+                                                                        className="w-full bg-white dark:bg-gray-800 border-gray-100 rounded-lg px-3 py-2 text-[10px] font-bold"
+                                                                    >
+                                                                        <option value={0}>Todos os Programas</option>
+                                                                        <option value={1}>COMPETE 2030</option>
+                                                                        <option value={2}>PESSOAS 2030</option>
+                                                                        <option value={5}>Norte 2030</option>
+                                                                        <option value={6}>Centro 2030</option>
+                                                                        <option value={7}>Lisboa 2030</option>
+                                                                        <option value={8}>Alentejo 2030</option>
+                                                                        <option value={9}>Algarve 2030</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-[8px] font-black text-gray-400 uppercase mb-1">Fundo</label>
+                                                                    <select
+                                                                        value={group.config?.[0]?.payload?.fundoId || 0}
+                                                                        onChange={(e) => handleConfigPayloadChange(idx, 'fundoId', parseInt(e.target.value))}
+                                                                        className="w-full bg-white dark:bg-gray-800 border-gray-100 rounded-lg px-3 py-2 text-[10px] font-bold"
+                                                                    >
+                                                                        <option value={0}>Todos</option>
+                                                                        <option value={1}>FEDER</option>
+                                                                        <option value={2}>FSE+</option>
+                                                                        <option value={3}>Coesão</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-[8px] font-black text-gray-400 uppercase mb-1">Natureza</label>
+                                                                    <select
+                                                                        value={group.config?.[0]?.payload?.naturezaAvisoId || 0}
+                                                                        onChange={(e) => handleConfigPayloadChange(idx, 'naturezaAvisoId', parseInt(e.target.value))}
+                                                                        className="w-full bg-white dark:bg-gray-800 border-gray-100 rounded-lg px-3 py-2 text-[10px] font-bold"
+                                                                    >
+                                                                        <option value={0}>Todas</option>
+                                                                        <option value={1}>Concurso</option>
+                                                                        <option value={2}>Convite</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div className="col-span-2">
+                                                                    <label className="block text-[8px] font-black text-gray-400 uppercase mb-1">Tipo de Promotor</label>
+                                                                    <select
+                                                                        value={group.config?.[0]?.payload?.tipoPromotorId || 0}
+                                                                        onChange={(e) => handleConfigPayloadChange(idx, 'tipoPromotorId', parseInt(e.target.value))}
+                                                                        className="w-full bg-white dark:bg-gray-800 border-gray-100 rounded-lg px-3 py-2 text-[10px] font-bold"
+                                                                    >
+                                                                        <option value={0}>Todos os Tipos</option>
+                                                                        <option value={1}>PME</option>
+                                                                        <option value={2}>Grande Empresa</option>
+                                                                        <option value={3}>Entidade Não Empresarial</option>
+                                                                        <option value={4}>Administração Pública</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div className="col-span-2">
+                                                                    <label className="block text-[8px] font-black text-gray-400 uppercase mb-1">Página Inicial</label>
+                                                                    <input
+                                                                        type="number"
+                                                                        min="0"
+                                                                        value={group.config?.[0]?.payload?.page ?? 0}
+                                                                        onChange={(e) => handleConfigPayloadChange(idx, 'page', parseInt(e.target.value) || 0)}
+                                                                        className="w-full bg-white dark:bg-gray-800 border-gray-100 rounded-lg px-3 py-2 text-[10px] font-bold"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 )}
+
+                                                {/* JSON Config Removed */}
                                             </div>
                                         </div>
                                     ))}

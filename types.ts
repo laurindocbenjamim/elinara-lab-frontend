@@ -121,6 +121,8 @@ export interface AgentSettings {
   scheduled_time?: string;
   llm_model: string;
   llm_provider: string;
+  source_type?: 'files' | 'api';
+  config?: any[];
 }
 
 export interface AgentControlRequest {
@@ -218,4 +220,11 @@ export interface DataSourceCreateRequest {
   user_id?: number;
   agent_id?: string;
   agent_name?: string;
+}
+export interface AgentAction {
+  id: string;
+  timestamp: string;
+  type: 'action' | 'observation' | 'thought' | 'error';
+  content: string;
+  meta?: Record<string, any>;
 }
