@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, Play, Square, Plus, Trash2, Cpu, Mail, Zap, ArrowRight, ArrowLeft, Bot } from 'lucide-react';
+import { Settings, Play, Square, Plus, Trash2, Cpu, Mail, Zap, ArrowRight, ArrowLeft, Bot, Database, History } from 'lucide-react';
 import { agentService, configService } from '../services/api';
 import { AgentStatus } from '../types';
 import '../styles/PageLayout.css';
@@ -12,7 +12,10 @@ const MOCK_AGENTS = [
     { id: 'sample-3', name: 'Sample Agent 3', icon: <Bot size={22} /> }
 ];
 
+import { useNavigate } from 'react-router-dom';
+
 export const Agent: React.FC = () => {
+    const navigate = useNavigate();
     const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
     const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
     const [connectionEmails, setConnectionEmails] = useState<string[]>([]);
@@ -105,7 +108,7 @@ export const Agent: React.FC = () => {
     // Selection View (Dashboard Inicial)
     if (!selectedAgent) {
         return (
-            <div className="dashboard-page h-[calc(100vh-4rem)] overflow-hidden flex flex-col p-6 lg:p-12 bg-[#050505]">
+            <div className="dashboard-page h-[calc(100vh-4rem)] overflow-hidden flex flex-col p-4 lg:p-12 bg-[#050505]">
                 <div className="max-w-5xl mx-auto w-full flex-grow flex flex-col justify-start -mt-5 z-10 min-h-0 overflow-y-auto custom-scrollbar pr-2">
                     <header className="mb-8 text-left">
                         <h2 className="text-3xl font-bold tracking-tighter bg-gradient-to-br from-white to-zinc-500 bg-clip-text text-transparent">
@@ -210,7 +213,7 @@ export const Agent: React.FC = () => {
     const activeAgent = MOCK_AGENTS.find(a => a.id === selectedAgent);
 
     return (
-        <div className="dashboard-page h-[calc(100vh-4rem)] overflow-hidden flex flex-col p-6 lg:p-12 bg-[#050505]">
+        <div className="dashboard-page h-[calc(100vh-4rem)] overflow-hidden flex flex-col p-4 lg:p-12 bg-[#050505]">
             <div className="max-w-5xl mx-auto w-full flex-grow flex flex-col justify-start -mt-5 z-10 min-h-0">
 
                 {/* Header - Back Button Added */}
@@ -222,7 +225,7 @@ export const Agent: React.FC = () => {
                         <ArrowLeft size={18} />
                     </button>
                     <div>
-                        <h2 className="text-3xl font-bold tracking-tighter bg-gradient-to-br from-white to-zinc-500 bg-clip-text text-transparent">
+                        <h2 className="text-2xl md:text-3xl font-bold tracking-tighter bg-gradient-to-br from-white to-zinc-500 bg-clip-text text-transparent truncate">
                             {activeAgent?.name || 'AGENT PANEL'}
                         </h2>
                         <div className="flex items-center gap-2 mt-1">
@@ -270,10 +273,10 @@ export const Agent: React.FC = () => {
                         {/* Control Panel Card */}
                         <div className="md:col-span-2 bg-white/[0.03] border border-white/5 rounded-3xl p-6">
                             <div className="text-[11px] font-medium text-zinc-500 mb-6 uppercase tracking-widest">Master Control Interface</div>
-                            <div className="flex justify-center">
+                            <div className="flex justify-center gap-4">
                                 <button
                                     onClick={() => handleAgentControl(agentStatus?.agent_status === 'active' ? 'stop' : 'start')}
-                                    className={`w-full max-w-md flex flex-col items-center justify-center py-6 rounded-2xl bg-white/5 border border-white/5 transition-all group ${agentStatus?.agent_status === 'active'
+                                    className={`w-full max-w-sm flex flex-col items-center justify-center py-6 rounded-2xl bg-white/5 border border-white/5 transition-all group ${agentStatus?.agent_status === 'active'
                                         ? 'hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400'
                                         : 'hover:bg-green-500/10 hover:border-green-500/30 hover:text-green-400'
                                         }`}
@@ -289,6 +292,22 @@ export const Agent: React.FC = () => {
                                             <span className="text-[10px] font-bold uppercase tracking-widest">Engage</span>
                                         </>
                                     )}
+                                </button>
+
+                                <button
+                                    onClick={() => navigate(`/agent/${selectedAgent}/datasources`)}
+                                    className="w-full max-w-sm flex flex-col items-center justify-center py-6 rounded-2xl bg-blue-500/5 text-blue-400 border border-blue-500/20 transition-all hover:bg-blue-500/20 hover:border-blue-500/40 hover:text-blue-300 group"
+                                >
+                                    <Database className="h-6 w-6 mb-2 opacity-70 group-hover:opacity-100 transition-opacity" />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest">Data Sources</span>
+                                </button>
+
+                                <button
+                                    onClick={() => navigate(`/agent/${selectedAgent}/history`)}
+                                    className="w-full max-w-sm flex flex-col items-center justify-center py-6 rounded-2xl bg-purple-500/5 text-purple-400 border border-purple-500/20 transition-all hover:bg-purple-500/20 hover:border-purple-500/40 hover:text-purple-300 group"
+                                >
+                                    <History className="h-6 w-6 mb-2 opacity-70 group-hover:opacity-100 transition-opacity" />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest">History</span>
                                 </button>
                             </div>
                         </div>

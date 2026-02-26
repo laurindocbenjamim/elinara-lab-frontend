@@ -512,6 +512,25 @@ export const agentService = {
 
   getTaskStatus: async (taskId: string): Promise<AgentTask> => {
     return agentApiClient.get(`/agent/task/${taskId}`);
+  },
+
+  getDataSources: async (processId?: string): Promise<any[]> => {
+    const url = processId ? `/datasources?process_id=${processId}` : '/datasources';
+    const response = await agentApiClient.get<any>(url) as any;
+    return response.data || [];
+  },
+
+  createDataSource: async (data: { process_id: string, platform: string, resource_identifier: string, resource_name: string }): Promise<any> => {
+    return agentApiClient.post('/datasources', data);
+  },
+
+  deleteDataSources: async (ids: string[]): Promise<any> => {
+    return agentApiClient.delete('/datasources', { data: { ids } });
+  },
+
+  getMatches: async (): Promise<any[]> => {
+    const response = await agentApiClient.get<any>('/agent/matches') as unknown as { success: boolean; data: any[] };
+    return response.data || [];
   }
 };
 
