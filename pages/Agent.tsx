@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, Play, Square, Pause, Plus, Trash2, Cpu, Mail, Zap, ArrowRight, ArrowLeft, Bot, Shield, Globe } from 'lucide-react';
+import { Settings, Play, Square, Plus, Trash2, Cpu, Mail, Zap, ArrowRight, ArrowLeft, Bot } from 'lucide-react';
 import { agentService, configService } from '../services/api';
 import { AgentStatus } from '../types';
-import { useAuth } from '../context/AuthContext';
 import '../styles/PageLayout.css';
 
 // Mock Agents - Refined for visual impact
@@ -14,7 +13,6 @@ const MOCK_AGENTS = [
 ];
 
 export const Agent: React.FC = () => {
-    const { user } = useAuth();
     const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
     const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
     const [connectionEmails, setConnectionEmails] = useState<string[]>([]);
@@ -126,7 +124,7 @@ export const Agent: React.FC = () => {
                                 <div className="absolute inset-0 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity duration-700">
                                     <svg width="100%" height="100%" className="absolute inset-0">
                                         <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="0.5"/>
+                                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="0.5" />
                                             <circle cx="0" cy="0" r="1" fill="white" />
                                         </pattern>
                                         <rect width="100%" height="100%" fill="url(#grid)" />
@@ -140,20 +138,20 @@ export const Agent: React.FC = () => {
 
                                 {/* Decorative Background Element */}
                                 <div className="absolute top-0 right-0 -mt-4 -mr-4 h-40 w-40 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/15 transition-all duration-700" />
-                                
+
                                 <div className="flex items-start justify-between z-10">
                                     <div className="relative p-3 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 group-hover:text-blue-400 group-hover:border-blue-500/20 transition-all duration-500 shadow-xl overflow-hidden">
                                         <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/5 transition-colors duration-500" />
                                         {agent.icon}
                                     </div>
-                                    
+
                                     {/* Abstract Activity Visual */}
                                     <div className="flex gap-1 items-end h-8">
                                         {[0.4, 0.7, 0.3, 0.9, 0.5].map((h, i) => (
-                                            <div 
+                                            <div
                                                 key={i}
                                                 className="w-1 bg-blue-500/20 group-hover:bg-blue-400/40 transition-all duration-500 rounded-full"
-                                                style={{ 
+                                                style={{
                                                     height: `${h * 100}%`,
                                                     animation: `pulse-height ${1 + i * 0.2}s ease-in-out infinite alternate`
                                                 }}
@@ -166,7 +164,7 @@ export const Agent: React.FC = () => {
                                     <h3 className="text-2xl font-bold text-white uppercase tracking-tighter group-hover:translate-x-1 transition-transform duration-500">
                                         {agent.name}
                                     </h3>
-                                    
+
                                     <div className="flex items-center gap-6 mt-5 pt-5 border-t border-white/5">
                                         {/* Original Visual Elements (No Text) */}
                                         <div className="flex gap-3 items-center">
@@ -179,7 +177,7 @@ export const Agent: React.FC = () => {
                                                 <div className="h-full bg-blue-500/40 w-0 group-hover:w-full transition-all duration-1000 delay-300" />
                                             </div>
                                         </div>
-                                        
+
                                         <div className="ml-auto opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0">
                                             <div className="p-2 rounded-full bg-blue-500/10 border border-blue-500/20">
                                                 <ArrowRight size={14} className="text-blue-400" />
@@ -191,9 +189,10 @@ export const Agent: React.FC = () => {
                         ))}
                     </div>
                 </div>
-                
+
                 {/* Global Style for animations */}
-                <style dangerouslySetInnerHTML={{ __html: `
+                <style dangerouslySetInnerHTML={{
+                    __html: `
                     @keyframes scan {
                         0% { top: -10%; }
                         100% { top: 110%; }
@@ -213,10 +212,10 @@ export const Agent: React.FC = () => {
     return (
         <div className="dashboard-page h-[calc(100vh-4rem)] overflow-hidden flex flex-col p-6 lg:p-12 bg-[#050505]">
             <div className="max-w-5xl mx-auto w-full flex-grow flex flex-col justify-start -mt-5 z-10 min-h-0">
-                
+
                 {/* Header - Back Button Added */}
                 <header className="mb-6 flex items-center gap-6 text-left">
-                    <button 
+                    <button
                         onClick={() => setSelectedAgent(null)}
                         className="p-2 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition-all text-zinc-500 hover:text-white"
                     >
@@ -235,7 +234,7 @@ export const Agent: React.FC = () => {
 
                 <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        
+
                         {/* Status Card */}
                         <div className="bg-white/[0.03] border border-white/5 rounded-3xl p-6 group">
                             <div className="flex items-center gap-2 mb-2 text-zinc-500">
@@ -271,27 +270,25 @@ export const Agent: React.FC = () => {
                         {/* Control Panel Card */}
                         <div className="md:col-span-2 bg-white/[0.03] border border-white/5 rounded-3xl p-6">
                             <div className="text-[11px] font-medium text-zinc-500 mb-6 uppercase tracking-widest">Master Control Interface</div>
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="flex justify-center">
                                 <button
-                                    onClick={() => handleAgentControl('start')}
-                                    className="flex flex-col items-center justify-center py-6 rounded-2xl bg-white/5 border border-white/5 hover:bg-green-500/10 hover:border-green-500/30 hover:text-green-400 transition-all group"
+                                    onClick={() => handleAgentControl(agentStatus?.agent_status === 'active' ? 'stop' : 'start')}
+                                    className={`w-full max-w-md flex flex-col items-center justify-center py-6 rounded-2xl bg-white/5 border border-white/5 transition-all group ${agentStatus?.agent_status === 'active'
+                                        ? 'hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400'
+                                        : 'hover:bg-green-500/10 hover:border-green-500/30 hover:text-green-400'
+                                        }`}
                                 >
-                                    <Play className="h-6 w-6 mb-2 opacity-50 group-hover:opacity-100 transition-opacity" />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest">Engage</span>
-                                </button>
-                                <button
-                                    onClick={() => handleAgentControl('pause')}
-                                    className="flex flex-col items-center justify-center py-6 rounded-2xl bg-white/5 border border-white/5 hover:bg-yellow-500/10 hover:border-yellow-500/30 hover:text-yellow-400 transition-all group"
-                                >
-                                    <Pause className="h-6 w-6 mb-2 opacity-50 group-hover:opacity-100 transition-opacity" />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest">Hold</span>
-                                </button>
-                                <button
-                                    onClick={() => handleAgentControl('stop')}
-                                    className="flex flex-col items-center justify-center py-6 rounded-2xl bg-white/5 border border-white/5 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition-all group"
-                                >
-                                    <Square className="h-6 w-6 mb-2 opacity-50 group-hover:opacity-100 transition-opacity" />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest">Terminate</span>
+                                    {agentStatus?.agent_status === 'active' ? (
+                                        <>
+                                            <Square className="h-6 w-6 mb-2 opacity-50 group-hover:opacity-100 transition-opacity" />
+                                            <span className="text-[10px] font-bold uppercase tracking-widest">Terminate</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Play className="h-6 w-6 mb-2 opacity-50 group-hover:opacity-100 transition-opacity" />
+                                            <span className="text-[10px] font-bold uppercase tracking-widest">Engage</span>
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -302,7 +299,7 @@ export const Agent: React.FC = () => {
                                 <Mail size={14} />
                                 <span className="text-[11px] font-medium uppercase tracking-wider">Access Management</span>
                             </div>
-                            
+
                             <div className="flex-1 overflow-y-auto mb-4 space-y-2 custom-scrollbar pr-1">
                                 {connectionEmails.map((email) => (
                                     <div key={email} className="flex justify-between items-center p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/[0.08] transition-colors">
@@ -337,7 +334,7 @@ export const Agent: React.FC = () => {
                                 <Settings size={14} />
                                 <span className="text-[11px] font-medium uppercase tracking-wider">Manual Task Initiation</span>
                             </div>
-                            
+
                             <form onSubmit={handleTriggerTask} className="space-y-4">
                                 <div>
                                     <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-1.5 px-0.5">Source Filename</label>
