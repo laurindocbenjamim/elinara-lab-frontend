@@ -91,7 +91,7 @@ export const AgentHistory: React.FC = () => {
                 <header className="mb-6 flex items-center justify-between text-left">
                     <div className="flex items-center gap-6">
                         <button
-                            onClick={() => navigate('/agent')}
+                            onClick={() => navigate('/agent', { state: { selectedAgent: agentId } })}
                             className="p-2 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition-all text-zinc-500 hover:text-white"
                         >
                             <ArrowLeft size={18} />
@@ -131,8 +131,8 @@ export const AgentHistory: React.FC = () => {
                             onClick={handleDownloadPDF}
                             disabled={matches.length === 0 || isLoading}
                             className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${matches.length === 0 || isLoading
-                                    ? 'bg-white/5 text-zinc-500 cursor-not-allowed'
-                                    : 'bg-blue-500 hover:bg-blue-600 text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_25px_rgba(59,130,246,0.5)]'
+                                ? 'bg-white/5 text-zinc-500 cursor-not-allowed'
+                                : 'bg-blue-500 hover:bg-blue-600 text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_25px_rgba(59,130,246,0.5)]'
                                 }`}
                         >
                             <Download size={16} />

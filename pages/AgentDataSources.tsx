@@ -115,7 +115,7 @@ export const AgentDataSources: React.FC = () => {
                 <header className="mb-6 flex items-center justify-between text-left">
                     <div className="flex items-center gap-6">
                         <button
-                            onClick={() => navigate('/agent')}
+                            onClick={() => navigate('/agent', { state: { selectedAgent: agentId } })}
                             className="p-2 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition-all text-zinc-500 hover:text-white"
                         >
                             <ArrowLeft size={18} />
