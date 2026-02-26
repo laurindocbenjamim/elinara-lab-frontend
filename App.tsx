@@ -76,7 +76,7 @@ const AppRoutes = () => {
           path="drive"
           element={
             <ProtectedRoute>
-               <GoogleDrive />
+              <GoogleDrive />
             </ProtectedRoute>
           }
         />
@@ -118,7 +118,11 @@ const AppRoutes = () => {
         {/* Specific path for backend OAuth callback redirect - made public to avoid redirect loop before token is set */}
         <Route
           path="admin/user"
-          element={<Navigate to="/" replace />}
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
         />
       </Route>
 
