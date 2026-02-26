@@ -95,7 +95,7 @@ const getCsrfTokenFromCookie = (): string | null => {
   );
 };
 
-// Request Interceptor
+// Request Interceptor for main API
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     // Para métodos que modificam estado, adicionar CSRF token
@@ -105,7 +105,7 @@ apiClient.interceptors.request.use(
       if (csrfToken) {
         config.headers['X-CSRF-Token'] = csrfToken;
       } else {
-        console.warn('CSRF token não encontrado para requisição:', {
+        console.warn('CSRF token não encontrado para requisição main API:', {
           method: config.method,
           url: config.url,
           requiresCsrf: requiresCsrfToken(config.method)
@@ -125,6 +125,36 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Request Interceptor for Agent API
+agentApiClient.interceptors.request.use(
+  async (config: InternalAxiosRequestConfig) => {
+    // Para métodos que modificam estado, adicionar CSRF token
+    if (requiresCsrfToken(config.method)) {
+      const csrfToken = getCsrfTokenFromCookie();
+
+      if (csrfToken) {
+        // Flask-JWT-Extended uses X-CSRF-TOKEN by default
+        config.headers['X-CSRF-Token'] = csrfToken;
+      } else {
+        console.warn('CSRF token não encontrado para requisição Agent API:', {
+          method: config.method,
+          url: config.url,
+          requiresCsrf: requiresCsrfToken(config.method)
+        });
+
+        if (config.method?.toUpperCase() !== 'GET') {
+          console.warn('Atenção: Requisição sem CSRF token enviado ao Agent API. O backend pode rejeitar.');
+        }
+      }
+    }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Response Interceptor
 apiClient.interceptors.response.use(
   (response) => {
@@ -133,7 +163,7 @@ apiClient.interceptors.response.use(
     if (response.headers['x-csrf-token'] || response.data?.csrf_token) {
       const newCsrfToken = response.headers['x-csrf-token'] || response.data.csrf_token;
       // O backend deve definir o cookie, mas mantemos lógica para segurança
-      console.debug('Novo CSRF token recebido na resposta');
+      console.debug('Novo CSRF token recebido na resposta', newCsrfToken !== undefined);
     }
 
     return response.data;
