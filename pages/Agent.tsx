@@ -12,11 +12,12 @@ const MOCK_AGENTS = [
     { id: 'sample-3', name: 'Sample Agent 3', icon: <Bot size={22} /> }
 ];
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export const Agent: React.FC = () => {
     const navigate = useNavigate();
-    const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
+    const location = useLocation();
+    const [selectedAgent, setSelectedAgent] = useState<string | null>(location.state?.selectedAgent || null);
     const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
     const [connectionEmails, setConnectionEmails] = useState<string[]>([]);
     const [newEmail, setNewEmail] = useState('');
