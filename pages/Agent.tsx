@@ -12,8 +12,8 @@ import '../styles/PageLayout.css';
 const MOCK_AGENTS = [
     { id: 'incentivos', name: 'Agente Incentivos', icon: <Bot size={22} /> },
     { id: 'cronometro', name: 'Agente Cronómetro', icon: <Bot size={22} /> },
-    { id: 'faturas', name: 'Agente Faturas', icon: <FileText size={22} /> },
-    { id: 'parecer', name: 'Agente Parecer', icon: <Sparkles size={22} /> }
+    { id: 'faturas', name: 'Agente Faturas', icon: <Bot size={22} /> },
+    { id: 'parecer', name: 'Agente Parecer', icon: <Bot size={22} /> }
 ];
 
 // Dashboard mapping
