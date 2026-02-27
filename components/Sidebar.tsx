@@ -29,9 +29,9 @@ export const Sidebar: React.FC = () => {
     };
 
     return (
-        <aside className="w-64 bg-[rgba(10,10,12,0.82)] backdrop-blur-xl border-r border-white/10 hidden lg:flex flex-col sticky top-16 h-[calc(100vh-4rem)] transition-colors duration-200 overflow-y-auto">
-            <div className="p-6">
-                <div className="flex items-center gap-3 mb-8">
+        <aside className="w-64 bg-[rgba(10,10,12,0.82)] backdrop-blur-xl border-r border-white/10 hidden lg:flex flex-col sticky top-16 h-[calc(100vh-4rem)] transition-colors duration-200">
+            <div className="p-6 flex flex-col h-full">
+                <div className="flex items-center gap-3 mb-8 flex-shrink-0">
                     <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
                         <Orbit className="h-6 w-6 animate-[spin_10s_linear_infinite]" />
                     </div>
@@ -41,7 +41,7 @@ export const Sidebar: React.FC = () => {
                     </div>
                 </div>
 
-                <nav className="space-y-1">
+                <nav className="space-y-1 overflow-y-auto custom-scrollbar flex-1 pb-10">
                     {menuItems.map((item) => {
                         const active = isActive(item.path);
                         return (
