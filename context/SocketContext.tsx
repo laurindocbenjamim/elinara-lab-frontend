@@ -23,9 +23,16 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
-        // API_BASE_URL might include /api/v1, but Socket.io usually connects to the root or a specific path
-        // We'll use the base URL from config and let socket.io handle the connection
-        const socketInstance = io(config.API_BASE_URL, {
+        // The socket is hosted on the agent host
+        // We extract the origin to connect to the root socket.io path
+        let socketUrl = config.AGENT_BASE_URL;
+        try {
+            socketUrl = new URL(config.AGENT_BASE_URL).origin;
+        } catch (e) {
+            console.warn('Failed to parse AGENT_BASE_URL origin', e);
+        }
+
+        const socketInstance = io(socketUrl, {
             withCredentials: true,
             transports: ['websocket', 'polling'],
             autoConnect: true,

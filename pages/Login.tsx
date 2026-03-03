@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Mail } from 'lucide-react';
+import { Lock, Mail, ArrowLeft } from 'lucide-react';
 
 // Declare Google type for TypeScript
 declare global {
@@ -38,7 +38,7 @@ export const Login: React.FC = () => {
     try {
       const response = await authService.login(formData);
       if (response.success || response.access_token || response.status_code === 200) {
-        await login(response.access_token || '');
+        await login();
         navigate('/agent');
       } else {
         setError('Login failed. Please check your credentials.');
@@ -64,8 +64,17 @@ export const Login: React.FC = () => {
       <div className="max-w-md w-full space-y-8 animate-fade-in relative z-10">
         {/* Glass morphism card */}
         <div className="rounded-2xl p-8 border border-white/10 shadow-2xl backdrop-blur-xl bg-[rgba(10,10,12,0.6)]">
-          <div className="text-center -mb-3">
-            <h2 className="text-4xl font-bold tracking-tighter bg-gradient-to-br from-white to-zinc-500 bg-clip-text text-transparent">Elinara Labs</h2>
+          <div className="flex justify-between items-center -mb-3">
+            <button
+              onClick={() => navigate('/')}
+              className="p-2 -ml-2 text-zinc-500 hover:text-white transition-colors"
+              title="Back to Home"
+            >
+              <ArrowLeft className="h-6 w-6" />
+            </button>
+            <h2 className="text-4xl font-bold tracking-tighter bg-gradient-to-br from-white to-zinc-500 bg-clip-text text-transparent flex-1 text-center pr-8">
+              Elinara Labs
+            </h2>
           </div>
 
           <form className="mt-8 space-y-5" onSubmit={handleSubmit}>

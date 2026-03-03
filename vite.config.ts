@@ -9,6 +9,7 @@ export default defineConfig({
     open: false,
     allowedHosts: [
       'elinara-auth-test.onrender.com',
+      'elinara-lab-frontend.onrender.com',
     ],
     proxy: {
       '/api': {

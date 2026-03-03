@@ -15,6 +15,7 @@ import {
 import { config } from '../config';
 
 const API_BASE_URL = config.API_BASE_URL;
+const AGENT_BASE_URL = config.AGENT_BASE_URL;
 
 // Create centralized Axios instance
 const apiClient = axios.create({
@@ -24,6 +25,27 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Create centralized Axios instance for agent backend
+const agentApiClient = axios.create({
+  baseURL: AGENT_BASE_URL,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+agentApiClient.interceptors.response.use(
+  (response) => response.data,
+  (error: AxiosError) => {
+    if (error.response) {
+      const errorData = error.response.data as any;
+      const errorMessage = errorData?.msg || errorData?.message || errorData?.error || `Erro HTTP ${error.response.status}`;
+      return Promise.reject(new Error(errorMessage));
+    }
+    return Promise.reject(new Error(error.message));
+  }
+);
 
 // Helper para obter cookie
 const getCookie = (name: string): string | null => {
@@ -73,7 +95,7 @@ const getCsrfTokenFromCookie = (): string | null => {
   );
 };
 
-// Request Interceptor
+// Request Interceptor for main API
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     // Para métodos que modificam estado, adicionar CSRF token
@@ -83,7 +105,7 @@ apiClient.interceptors.request.use(
       if (csrfToken) {
         config.headers['X-CSRF-Token'] = csrfToken;
       } else {
-        console.warn('CSRF token não encontrado para requisição:', {
+        console.warn('CSRF token não encontrado para requisição main API:', {
           method: config.method,
           url: config.url,
           requiresCsrf: requiresCsrfToken(config.method)
@@ -103,6 +125,36 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Request Interceptor for Agent API
+agentApiClient.interceptors.request.use(
+  async (config: InternalAxiosRequestConfig) => {
+    // Para métodos que modificam estado, adicionar CSRF token
+    if (requiresCsrfToken(config.method)) {
+      const csrfToken = getCsrfTokenFromCookie();
+
+      if (csrfToken) {
+        // Flask-JWT-Extended uses X-CSRF-TOKEN by default
+        config.headers['X-CSRF-Token'] = csrfToken;
+      } else {
+        console.warn('CSRF token não encontrado para requisição Agent API:', {
+          method: config.method,
+          url: config.url,
+          requiresCsrf: requiresCsrfToken(config.method)
+        });
+
+        if (config.method?.toUpperCase() !== 'GET') {
+          console.warn('Atenção: Requisição sem CSRF token enviado ao Agent API. O backend pode rejeitar.');
+        }
+      }
+    }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Response Interceptor
 apiClient.interceptors.response.use(
   (response) => {
@@ -111,7 +163,7 @@ apiClient.interceptors.response.use(
     if (response.headers['x-csrf-token'] || response.data?.csrf_token) {
       const newCsrfToken = response.headers['x-csrf-token'] || response.data.csrf_token;
       // O backend deve definir o cookie, mas mantemos lógica para segurança
-      console.debug('Novo CSRF token recebido na resposta');
+      console.debug('Novo CSRF token recebido na resposta', newCsrfToken !== undefined);
     }
 
     return response.data;
@@ -443,23 +495,42 @@ export const cloudFilesService = {
 // Agents Service
 export const agentService = {
   getStatus: async (): Promise<AgentStatus> => {
-    return apiClient.get('/agent/status');
+    return agentApiClient.get('/agent/status');
   },
 
   control: async (action: 'start' | 'stop' | 'pause'): Promise<{ msg: string; status: string }> => {
-    return apiClient.post('/agent/control', { action });
+    return agentApiClient.post('/agent/control', { action });
   },
 
   updateConfig: async (model: string): Promise<{ msg: string; selected_model: string }> => {
-    return apiClient.post('/agent/config', { model });
+    return agentApiClient.post('/agent/config', { model });
   },
 
   triggerTask: async (filename: string, phone: string): Promise<AgentTaskResponse> => {
-    return apiClient.post('/agent/task', { filename, phone });
+    return agentApiClient.post('/agent/task', { filename, phone });
   },
 
   getTaskStatus: async (taskId: string): Promise<AgentTask> => {
-    return apiClient.get(`/agent/task/${taskId}`);
+    return agentApiClient.get(`/agent/task/${taskId}`);
+  },
+
+  getDataSources: async (processId?: string): Promise<any[]> => {
+    const url = processId ? `/datasources?process_id=${processId}` : '/datasources';
+    const response = await agentApiClient.get<any>(url) as any;
+    return response.data || [];
+  },
+
+  createDataSource: async (data: { process_id: string, platform: string, resource_identifier: string, resource_name: string }): Promise<any> => {
+    return agentApiClient.post('/datasources', data);
+  },
+
+  deleteDataSources: async (ids: string[]): Promise<any> => {
+    return agentApiClient.delete('/datasources', { data: { ids } });
+  },
+
+  getMatches: async (): Promise<any[]> => {
+    const response = await agentApiClient.get<any>('/agent/matches') as unknown as { success: boolean; data: any[] };
+    return response.data || [];
   }
 };
 

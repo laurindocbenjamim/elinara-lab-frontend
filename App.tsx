@@ -13,6 +13,8 @@ import { FileProperties } from './pages/FileProperties';
 import { CrossReference } from './pages/CrossReference';
 import { AgentTasks } from './pages/AgentTasks';
 import { Agent } from './pages/Agent';
+import { AgentDataSources } from './pages/AgentDataSources';
+import { AgentHistory } from './pages/AgentHistory';
 import { Profile } from './pages/Profile';
 import { SocketProvider } from './context/SocketContext';
 import { AuthStatus } from './types';
@@ -45,14 +47,28 @@ const AppRoutes = () => {
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
 
-        {/* Portfolio Routes removed */}
-
         {/* Protected Routes */}
         <Route
           path="agent"
           element={
             <ProtectedRoute>
               <Agent />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="agent/:id/datasources"
+          element={
+            <ProtectedRoute>
+              <AgentDataSources />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="agent/:id/history"
+          element={
+            <ProtectedRoute>
+              <AgentHistory />
             </ProtectedRoute>
           }
         />
@@ -76,7 +92,7 @@ const AppRoutes = () => {
           path="drive"
           element={
             <ProtectedRoute>
-               <GoogleDrive />
+              <GoogleDrive />
             </ProtectedRoute>
           }
         />
@@ -118,7 +134,11 @@ const AppRoutes = () => {
         {/* Specific path for backend OAuth callback redirect - made public to avoid redirect loop before token is set */}
         <Route
           path="admin/user"
-          element={<Navigate to="/" replace />}
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
         />
       </Route>
 
