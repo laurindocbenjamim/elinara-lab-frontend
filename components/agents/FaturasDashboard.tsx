@@ -51,7 +51,7 @@ export const FaturasDashboard: React.FC<DashboardProps> = ({ agentId, agentName,
             const token = localStorage.getItem('token') || ''; 
             
             // Fazemos o POST diretamente para a API do agente a correr na porta 8000
-            const response = await fetch('http://localhost:8000/api/v1/incentivos/pedidos_pagamento/process-invoice', {
+            const response = await fetch('http://localhost:8000/incentivos/pedidos_pagamento/process-invoice', {
                 method: 'POST',
                 headers: {
                     // Descomentar se o backend exigir auth neste endpoint específico
