@@ -6,6 +6,7 @@ import {
     HardDrive,
     Settings,
     ChevronRight,
+    ChevronLeft,
     Orbit
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -33,17 +34,24 @@ export const Sidebar: React.FC = () => {
         <aside className={`bg-[rgba(10,10,12,0.82)] backdrop-blur-xl border-r border-white/10 hidden lg:flex flex-col sticky top-16 h-[calc(100vh-4rem)] transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
             <div className={`p-4 flex flex-col h-full ${isCollapsed ? 'px-3' : 'px-6'}`}>
                 <div
-                    className={`flex items-center gap-3 mb-8 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity ${isCollapsed ? 'justify-center' : ''}`}
+                    className={`flex items-center gap-3 mb-8 flex-shrink-0 cursor-pointer hover:bg-white/5 p-2 -mx-2 rounded-2xl transition-all ${isCollapsed ? 'justify-center' : 'justify-between'}`}
                     onClick={() => setIsCollapsed(!isCollapsed)}
                     title="Toggle Sidebar"
                 >
-                    <div className="h-10 w-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
-                        <Orbit className="h-6 w-6 animate-[spin_10s_linear_infinite]" />
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-10 w-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+                            <Orbit className="h-6 w-6 animate-[spin_10s_linear_infinite]" />
+                        </div>
+                        {!isCollapsed && (
+                            <div className="min-w-0 transition-all duration-300 opacity-100">
+                                <h2 className="text-sm font-bold text-white leading-tight truncate uppercase tracking-tighter">{fullName}</h2>
+                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest truncate">{companyName}</p>
+                            </div>
+                        )}
                     </div>
                     {!isCollapsed && (
-                        <div className="min-w-0 transition-all duration-300 opacity-100">
-                            <h2 className="text-sm font-bold text-white leading-tight truncate uppercase tracking-tighter">{fullName}</h2>
-                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest truncate">{companyName}</p>
+                        <div className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-zinc-400 hover:text-white transition-colors flex-shrink-0">
+                            <ChevronLeft size={16} />
                         </div>
                     )}
                 </div>
