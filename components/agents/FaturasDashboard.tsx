@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ArrowLeft, Folder, HardDrive, Cloud, BrainCircuit, CheckCircle2, AlertTriangle, XCircle, FileText, ChevronRight, Play } from 'lucide-react';
 
 interface DashboardProps {
@@ -10,45 +10,106 @@ interface DashboardProps {
 interface Invoice {
     id: string;
     filename: string;
-    status: 'GREEN' | 'YELLOW' | 'RED';
+    status: 'GREEN' | 'YELLOW' | 'RED' | 'ERROR';
     extracted_date: string;
     reference_date: string;
     confidence_score: number;
     issues: { description: string }[];
 }
 
-const MOCK_INVOICES: Invoice[] = [
-    { id: '1', filename: 'Fatura_Vodafone_Jan24.pdf', status: 'GREEN', extracted_date: '2024-01-15', reference_date: '2024-01-01', confidence_score: 0.98, issues: [] },
-    { id: '2', filename: 'Recibo_Worten_Fev24.pdf', status: 'GREEN', extracted_date: '2024-02-03', reference_date: '2024-01-01', confidence_score: 0.96, issues: [] },
-    { id: '3', filename: 'Fatura_Equipamento_Rasurada.pdf', status: 'YELLOW', extracted_date: '2024-03-10', reference_date: '2024-01-01', confidence_score: 0.65, issues: [{ description: 'Anotações manuais detetadas sobre o NIF.' }] },
-    { id: '4', filename: 'Despesa_2023_ForaPrazo.pdf', status: 'RED', extracted_date: '2023-11-20', reference_date: '2024-01-01', confidence_score: 0.92, issues: [{ description: 'Data da fatura anterior à data de elegibilidade do projeto.' }] },
-    { id: '5', filename: 'Fatura_Ilegivel_Digitalizacao.jpg', status: 'RED', extracted_date: '', reference_date: '2024-01-01', confidence_score: 0.20, issues: [{ description: 'Falha no OCR. Resolução muito baixa.' }] },
-];
-
 export const FaturasDashboard: React.FC<DashboardProps> = ({ agentId, agentName, onBack }) => {
     const [selectedSource, setSelectedSource] = useState<string | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [resultsAvailable, setResultsAvailable] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<'GREEN' | 'YELLOW' | 'RED' | null>(null);
+    const [invoices, setInvoices] = useState<Invoice[]>([]);
+    
+    // Referência para o input de ficheiro oculto
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleProcess = () => {
-        if (!selectedSource) return alert('Selecione uma pasta de origem primeiro.');
-        setIsProcessing(true);
-        setResultsAvailable(false);
-        setSelectedCategory(null);
-        
-        // Simulate processing time
-        setTimeout(() => {
-            setIsProcessing(false);
-            setResultsAvailable(true);
-        }, 3000);
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            setSelectedFile(e.target.files[0]);
+            setSelectedSource('local');
+        }
     };
 
-    const greenInvoices = MOCK_INVOICES.filter(i => i.status === 'GREEN');
-    const yellowInvoices = MOCK_INVOICES.filter(i => i.status === 'YELLOW');
-    const redInvoices = MOCK_INVOICES.filter(i => i.status === 'RED');
+    const handleProcess = async () => {
+        if (!selectedFile) {
+            return alert('Por favor, carregue uma fatura primeiro (clique em "Carregar Ficheiro" na Origem de Dados).');
+        }
+        
+        setIsProcessing(true);
+        setSelectedCategory(null);
+        
+        const formData = new FormData();
+        formData.append('file', selectedFile);
 
-    const displayedInvoices = selectedCategory ? MOCK_INVOICES.filter(i => i.status === selectedCategory) : [];
+        try {
+            // O token deve estar configurado no localStorage se a auth estiver ativa
+            const token = localStorage.getItem('token') || ''; 
+            
+            // Fazemos o POST diretamente para a API do agente a correr na porta 8000
+            const response = await fetch('http://localhost:8000/api/v1/incentivos/pedidos_pagamento/process-invoice', {
+                method: 'POST',
+                headers: {
+                    // Descomentar se o backend exigir auth neste endpoint específico
+                    // 'Authorization': `Bearer ${token}` 
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                // Tenta apanhar o erro se a API devolver em formato JSON
+                let errorMsg = "Falha ao comunicar com o agente backend.";
+                try {
+                    const errorData = await response.json();
+                    if (errorData.detail) errorMsg = errorData.detail;
+                } catch (e) {}
+                throw new Error(errorMsg);
+            }
+
+            const data = await response.json();
+            
+            // Construimos o novo objeto da fatura processada
+            const newInvoice: Invoice = {
+                id: Math.random().toString(36).substring(7),
+                filename: data.filename || selectedFile.name,
+                status: data.status || 'ERROR',
+                extracted_date: data.extracted_date || 'N/D',
+                reference_date: data.reference_date || 'N/D',
+                confidence_score: data.confidence_score || 0,
+                issues: data.issues || []
+            };
+
+            // Adicionamos aos resultados existentes
+            setInvoices(prev => [newInvoice, ...prev]);
+            setResultsAvailable(true);
+            
+            // Seleciona automaticamente a categoria da fatura processada para visualização
+            if (['GREEN', 'YELLOW', 'RED'].includes(newInvoice.status)) {
+                setSelectedCategory(newInvoice.status as 'GREEN' | 'YELLOW' | 'RED');
+            }
+            
+            // Limpa a seleção para permitir novo carregamento
+            setSelectedFile(null);
+            setSelectedSource(null);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+
+        } catch (error: any) {
+            console.error(error);
+            alert(`Erro durante a triagem: ${error.message}\nVerifique se o backend está a correr (uvicorn main:app --port 8000).`);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const greenInvoices = invoices.filter(i => i.status === 'GREEN');
+    const yellowInvoices = invoices.filter(i => i.status === 'YELLOW');
+    const redInvoices = invoices.filter(i => i.status === 'RED');
+
+    const displayedInvoices = selectedCategory ? invoices.filter(i => i.status === selectedCategory) : [];
 
     return (
         <div className="dashboard-page h-[calc(100vh-4rem)] overflow-hidden flex flex-col p-4 lg:p-12 bg-[#050505]">
@@ -79,30 +140,42 @@ export const FaturasDashboard: React.FC<DashboardProps> = ({ agentId, agentName,
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[320px]">
                         
                         {/* Column 1: Input Source */}
-                        <div className="bg-white/[0.03] border border-white/5 rounded-[2rem] p-6 flex flex-col">
+                        <div className="bg-white/[0.03] border border-white/5 rounded-[2rem] p-6 flex flex-col relative">
                             <div className="flex items-center gap-2 mb-6 text-zinc-500">
                                 <Folder size={16} />
                                 <span className="text-[11px] font-medium uppercase tracking-widest">Origem de Dados</span>
                             </div>
                             
+                            {/* Input escondido para Upload de ficheiro real */}
+                            <input 
+                                type="file" 
+                                accept=".pdf,image/*" 
+                                className="hidden" 
+                                ref={fileInputRef} 
+                                onChange={handleFileChange} 
+                            />
+
                             <div className="flex-1 flex flex-col gap-3">
+                                {/* Botão adaptado para funcionar como seletor de ficheiros */}
                                 <button 
-                                    onClick={() => setSelectedSource('sharepoint')}
-                                    className={`p-4 rounded-2xl border transition-all flex items-center gap-4 text-left ${selectedSource === 'sharepoint' ? 'bg-blue-500/10 border-blue-500/30 text-white' : 'bg-white/5 border-white/5 text-zinc-400 hover:bg-white/10'}`}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className={`p-4 rounded-2xl border transition-all flex items-center gap-4 text-left ${selectedSource === 'local' ? 'bg-blue-500/10 border-blue-500/30 text-white' : 'bg-white/5 border-white/5 text-zinc-400 hover:bg-white/10'}`}
                                 >
-                                    <Cloud size={24} className={selectedSource === 'sharepoint' ? 'text-blue-400' : ''} />
-                                    <div>
-                                        <div className="text-sm font-bold">SharePoint Elinara</div>
-                                        <div className="text-[10px] text-zinc-500 uppercase tracking-wider">/Incentivos/Faturas_2024</div>
+                                    <Cloud size={24} className={selectedSource === 'local' ? 'text-blue-400' : ''} />
+                                    <div className="flex-1 overflow-hidden">
+                                        <div className="text-sm font-bold">Carregar Fatura Local</div>
+                                        <div className="text-[10px] text-zinc-500 uppercase tracking-wider truncate">
+                                            {selectedFile ? selectedFile.name : '/Uploads/Clicar_Para_Escolher'}
+                                        </div>
                                     </div>
                                 </button>
 
                                 <button 
-                                    onClick={() => setSelectedSource('gdrive')}
-                                    className={`p-4 rounded-2xl border transition-all flex items-center gap-4 text-left ${selectedSource === 'gdrive' ? 'bg-blue-500/10 border-blue-500/30 text-white' : 'bg-white/5 border-white/5 text-zinc-400 hover:bg-white/10'}`}
+                                    onClick={() => alert('Para este teste inicial, use o botão de cima "Carregar Fatura Local" para enviar diretamente para o backend.')}
+                                    className={`p-4 rounded-2xl border transition-all flex items-center gap-4 text-left bg-white/5 border-white/5 text-zinc-400 hover:bg-white/10`}
                                 >
-                                    <HardDrive size={24} className={selectedSource === 'gdrive' ? 'text-blue-400' : ''} />
-                                    <div>
+                                    <HardDrive size={24} />
+                                    <div className="flex-1 overflow-hidden">
                                         <div className="text-sm font-bold">Google Drive do Cliente</div>
                                         <div className="text-[10px] text-zinc-500 uppercase tracking-wider">/Uploads/Docs_Pendentes</div>
                                     </div>
@@ -129,9 +202,9 @@ export const FaturasDashboard: React.FC<DashboardProps> = ({ agentId, agentName,
 
                             <button
                                 onClick={handleProcess}
-                                disabled={isProcessing}
+                                disabled={isProcessing || !selectedFile}
                                 className={`w-full py-4 font-bold rounded-2xl transition-all flex items-center justify-center gap-3 text-xs tracking-[0.2em] relative z-10 ${
-                                    isProcessing 
+                                    isProcessing || !selectedFile
                                     ? 'bg-white/5 text-zinc-500 cursor-not-allowed border border-white/5' 
                                     : 'bg-blue-500 hover:bg-blue-600 text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] border border-blue-400/50'
                                 }`}
@@ -151,9 +224,9 @@ export const FaturasDashboard: React.FC<DashboardProps> = ({ agentId, agentName,
                         <div className="bg-white/[0.03] border border-white/5 rounded-[2rem] p-6 flex flex-col">
                             <div className="flex items-center justify-between mb-6">
                                 <div className="text-[11px] font-medium text-zinc-500 uppercase tracking-widest">Caixas de Triagem</div>
-                                {resultsAvailable && (
+                                {resultsAvailable && invoices.length > 0 && (
                                     <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold">
-                                        {MOCK_INVOICES.length} Docs
+                                        {invoices.length} Docs
                                     </span>
                                 )}
                             </div>
@@ -239,11 +312,11 @@ export const FaturasDashboard: React.FC<DashboardProps> = ({ agentId, agentName,
                                                     </div>
                                                     <div>
                                                         <span className="text-zinc-600 block mb-1">Ref. Projeto</span>
-                                                        <span className="text-zinc-300 font-medium">{inv.reference_date}</span>
+                                                        <span className="text-zinc-300 font-medium">{inv.reference_date || 'N/D'}</span>
                                                     </div>
                                                 </div>
 
-                                                {inv.issues.length > 0 && (
+                                                {inv.issues && inv.issues.length > 0 && (
                                                     <div className="mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
                                                         <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest block mb-1">Motivo:</span>
                                                         <ul className="text-xs text-red-400/90 list-disc pl-4 space-y-1">
