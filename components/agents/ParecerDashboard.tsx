@@ -29,7 +29,7 @@ export const ParecerDashboard: React.FC<DashboardProps> = ({ agentId, agentName,
     const handleProcess = async () => {
         if (sourceType === 'local' && !file) return alert("Por favor, seleciona um ficheiro PDF.");
         if (sourceType === 'drive' && !selectedDriveFile) return alert("Por favor, seleciona um ficheiro do Drive/SharePoint.");
-        
+
         setIsLoading(true);
         setResult(null);
 
@@ -58,9 +58,9 @@ export const ParecerDashboard: React.FC<DashboardProps> = ({ agentId, agentName,
     };
 
     return (
-        <div className="dashboard-page h-[calc(100vh-4rem)] overflow-hidden flex flex-col p-4 lg:p-12 bg-[#050505]">
+        <div className="dashboard-page min-h-[calc(100vh-4rem)] lg:h-[calc(100vh-4rem)] overflow-y-auto lg:overflow-hidden flex flex-col p-4 lg:p-12 bg-[#050505]">
             <div className="max-w-6xl mx-auto w-full flex-grow flex flex-col justify-start -mt-5 z-10 min-h-0">
-                
+
                 {/* Header */}
                 <header className="mb-8 flex items-center gap-6 text-left">
                     <button
@@ -81,25 +81,25 @@ export const ParecerDashboard: React.FC<DashboardProps> = ({ agentId, agentName,
                 </header>
 
                 <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-6">
-                    
+
                     {/* Left Panel: Configuration */}
                     <div className="w-full lg:w-[380px] flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-1">
                         <div className="bg-white/[0.03] border border-white/5 rounded-[2rem] p-6 space-y-6">
-                            
+
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2 text-zinc-500 mb-2">
                                     <FileText size={16} />
                                     <span className="text-[11px] font-medium uppercase tracking-widest">Origem do Parecer</span>
                                 </div>
-                                
+
                                 <div className="grid grid-cols-2 gap-2">
-                                    <button 
+                                    <button
                                         onClick={() => setSourceType('local')}
                                         className={`p-3 rounded-xl border text-[10px] font-bold uppercase transition-all ${sourceType === 'local' ? 'bg-white/10 border-white/20 text-white' : 'bg-white/5 border-white/5 text-zinc-500'}`}
                                     >
                                         Upload Local
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => setSourceType('drive')}
                                         className={`p-3 rounded-xl border text-[10px] font-bold uppercase transition-all ${sourceType === 'drive' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-white/5 border-white/5 text-zinc-500'}`}
                                     >
@@ -110,8 +110,8 @@ export const ParecerDashboard: React.FC<DashboardProps> = ({ agentId, agentName,
 
                             {sourceType === 'local' ? (
                                 <div className="relative group">
-                                    <input 
-                                        type="file" 
+                                    <input
+                                        type="file"
                                         accept=".pdf"
                                         onChange={(e) => setFile(e.target.files?.[0] || null)}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
@@ -130,7 +130,7 @@ export const ParecerDashboard: React.FC<DashboardProps> = ({ agentId, agentName,
                                 </div>
                             ) : (
                                 <div className="space-y-2">
-                                    <button 
+                                    <button
                                         onClick={() => setSelectedDriveFile('parecer_final_v1.pdf')}
                                         className={`w-full p-4 rounded-2xl border transition-all flex items-center gap-4 text-left ${selectedDriveFile === 'parecer_final_v1.pdf' ? 'bg-blue-500/10 border-blue-500/30 text-white' : 'bg-white/5 border-white/5 text-zinc-400 hover:bg-white/10'}`}
                                     >
@@ -172,11 +172,10 @@ export const ParecerDashboard: React.FC<DashboardProps> = ({ agentId, agentName,
                             <button
                                 onClick={handleProcess}
                                 disabled={isLoading || (sourceType === 'local' ? !file : !selectedDriveFile)}
-                                className={`w-full py-4 font-bold rounded-2xl transition-all flex items-center justify-center gap-3 text-xs tracking-[0.2em] ${
-                                    isLoading || (sourceType === 'local' ? !file : !selectedDriveFile)
-                                    ? 'bg-white/5 text-zinc-600 cursor-not-allowed border border-white/5' 
-                                    : 'bg-blue-500 hover:bg-blue-600 text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] border border-blue-400/50'
-                                }`}
+                                className={`w-full py-4 font-bold rounded-2xl transition-all flex items-center justify-center gap-3 text-xs tracking-[0.2em] ${isLoading || (sourceType === 'local' ? !file : !selectedDriveFile)
+                                        ? 'bg-white/5 text-zinc-600 cursor-not-allowed border border-white/5'
+                                        : 'bg-blue-500 hover:bg-blue-600 text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] border border-blue-400/50'
+                                    }`}
                             >
                                 {isLoading ? (
                                     <Loader2 size={16} className="animate-spin" />
