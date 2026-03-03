@@ -10,6 +10,7 @@ export const Navbar: React.FC = () => {
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
   const [isOpen, setIsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -30,9 +31,51 @@ export const Navbar: React.FC = () => {
               <button className="p-2 text-zinc-400 hover:text-white transition-colors rounded-xl hover:bg-white/5" title="Help">
                 <HelpCircle className="h-5 w-5" />
               </button>
-              <button onClick={handleLogout} className="p-2 text-zinc-400 hover:text-red-400 transition-colors rounded-xl hover:bg-red-500/10" title="Sign out">
-                <LogOut className="h-5 w-5" />
-              </button>
+
+              <div className="relative">
+                <button
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  className="flex items-center gap-2 p-1 pr-3 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-all group"
+                >
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-inner overflow-hidden">
+                    {user?.firstname?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                  <span className="text-sm font-medium text-white max-w-[120px] truncate group-hover:text-blue-400 transition-colors">
+                    {user?.firstname || user?.username}
+                  </span>
+                </button>
+
+                {isProfileOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsProfileOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-[#0a0a0c]/95 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.8)] py-2 z-50 overflow-hidden transform opacity-100 scale-100 transition-all origin-top-right">
+                      <div className="px-4 py-3 border-b border-white/10 mb-2">
+                        <p className="text-sm font-bold text-white truncate">{user?.firstname} {user?.lastname}</p>
+                        <p className="text-xs text-zinc-500 truncate">{user?.email || user?.username}</p>
+                      </div>
+
+                      <Link to="/profile" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm text-zinc-400 hover:text-white hover:bg-white/5 transition-colors">
+                        <Settings className="h-4 w-4" />
+                        Account Settings
+                      </Link>
+
+                      <button
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          handleLogout();
+                        }}
+                        className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors mt-1"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           ) : (
             <div className="flex items-center space-x-6 text-sm font-mono">
