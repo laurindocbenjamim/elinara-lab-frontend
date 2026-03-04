@@ -7,6 +7,7 @@ import { FaturasDashboard } from '../components/agents/FaturasDashboard';
 import { ParecerDashboard } from '../components/agents/ParecerDashboard';
 import { CompraVersoesDashboard } from '../components/agents/CompraVersoesDashboard';
 import { ColomboDashboard } from '../components/agents/ColomboDashboard';
+import { CandidaturaDashboard } from '../components/agents/CandidaturaDashboard';
 import '../styles/PageLayout.css';
 
 // Mock Agents - Refined for visual impact
@@ -15,7 +16,8 @@ const MOCK_AGENTS = [
     { id: 'faturas', name: 'Agente Faturas', icon: <Bot size={22} /> },
     { id: 'parecer', name: 'Agente Parecer', icon: <Bot size={22} /> },
     { id: 'compra_versoes', name: 'Agente Compara Versões', icon: <Bot size={22} /> },
-    { id: 'colombo', name: 'Agente Colombo', icon: <Bot size={22} /> }
+    { id: 'colombo', name: 'Agente Colombo', icon: <Bot size={22} /> },
+    { id: 'candidatura', name: 'Agente Candidaturas', icon: <Bot size={22} /> }
 ];
 
 // Dashboard mapping
@@ -25,6 +27,7 @@ const AGENT_DASHBOARDS: Record<string, React.FC<any>> = {
     'parecer': ParecerDashboard,
     'compra_versoes': CompraVersoesDashboard,
     'colombo': ColomboDashboard,
+    'candidatura': CandidaturaDashboard,
     // Other agents will use the DefaultDashboard by fallback
 };
 
