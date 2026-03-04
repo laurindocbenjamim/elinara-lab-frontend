@@ -1,27 +1,30 @@
 import React, { useState } from 'react';
-import { Bot, ArrowRight, ArrowLeft, Clock, FileText, Sparkles } from 'lucide-react';
+import { Bot, ArrowRight, ArrowLeft, Clock, FileText, Sparkles, Scale, Search } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { DefaultDashboard } from '../components/agents/DefaultDashboard';
-import { IncentivosDashboard } from '../components/agents/IncentivosDashboard';
 import { CronometroDashboard } from '../components/agents/CronometroDashboard';
 import { FaturasDashboard } from '../components/agents/FaturasDashboard';
 import { ParecerDashboard } from '../components/agents/ParecerDashboard';
+import { CompraVersoesDashboard } from '../components/agents/CompraVersoesDashboard';
+import { ColomboDashboard } from '../components/agents/ColomboDashboard';
 import '../styles/PageLayout.css';
 
 // Mock Agents - Refined for visual impact
 const MOCK_AGENTS = [
-    { id: 'incentivos', name: 'Agente Incentivos', icon: <Bot size={22} /> },
     { id: 'cronometro', name: 'Agente Cronómetro', icon: <Bot size={22} /> },
     { id: 'faturas', name: 'Agente Faturas', icon: <Bot size={22} /> },
-    { id: 'parecer', name: 'Agente Parecer', icon: <Bot size={22} /> }
+    { id: 'parecer', name: 'Agente Parecer', icon: <Bot size={22} /> },
+    { id: 'compra_versoes', name: 'Agente Compara Versões', icon: <Bot size={22} /> },
+    { id: 'colombo', name: 'Agente Colombo', icon: <Bot size={22} /> }
 ];
 
 // Dashboard mapping
 const AGENT_DASHBOARDS: Record<string, React.FC<any>> = {
-    'incentivos': IncentivosDashboard,
     'cronometro': CronometroDashboard,
     'faturas': FaturasDashboard,
     'parecer': ParecerDashboard,
+    'compra_versoes': CompraVersoesDashboard,
+    'colombo': ColomboDashboard,
     // Other agents will use the DefaultDashboard by fallback
 };
 
